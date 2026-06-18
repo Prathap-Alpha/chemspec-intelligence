@@ -295,8 +295,8 @@
     <div class="adbody" id="adPanel" style="display:none">
       <div class="pill-state" id="adState">AI: Demo mode</div>
       <label>AI proxy URL <span style="color:var(--green)">(recommended)</span></label>
-      <input id="cfgProxy" type="url" placeholder="https://chemspec-ai.<you>.workers.dev/chat" />
-      <div class="adnote">Your DeepSeek key stays on the server (Cloudflare Worker), never in this site. See RUNBOOK.md to deploy in ~5 min.</div>
+      <input id="cfgProxy" type="url" placeholder="https://chemspec-ai-7227.lab72720011.workers.dev" />
+      <div class="adnote">Paste the <b>Worker URL</b> here (starts with <b>https://</b>). Your DeepSeek <b>key does NOT go here</b> — the key lives in the Worker (server-side). See RUNBOOK.md.</div>
 
       <label>DeepSeek API key <span style="color:var(--faint)">(advanced / local only)</span></label>
       <input id="cfgKey" type="password" placeholder="sk-… (kept in this browser only)" autocomplete="off" />
@@ -836,15 +836,22 @@ document.querySelectorAll(".sw").forEach(sw=>sw.addEventListener("click",()=>{sw
 function updAdState(){
   const proxy=document.getElementById("cfgProxy").value.trim();
   const key=document.getElementById("cfgKey").value.trim();
+  const el=document.getElementById("adState");
+  // guard: a key pasted into the URL box is the #1 mistake
+  if(proxy && /^sk-/i.test(proxy)){ el.textContent="⚠ That's an API KEY, not a URL — the key goes in the Worker, not here"; el.classList.remove("live"); return; }
+  if(proxy && !/^https?:\/\//i.test(proxy)){ el.textContent="⚠ Proxy URL must start with https://"; el.classList.remove("live"); return; }
   const liveOn=document.getElementById("tgAI").classList.contains("on");
   const live=liveOn&&(proxy||key);
-  const el=document.getElementById("adState");
   el.textContent=live?("AI: Live ("+(proxy?"proxy":"browser key")+")"):"AI: Demo mode (built-in answers)";
   el.classList.toggle("live",!!live);
 }
 ["cfgProxy","cfgKey"].forEach(id=>document.getElementById(id).addEventListener("input",updAdState));
 
 document.getElementById("adSave").addEventListener("click",()=>{
+  const proxyVal=document.getElementById("cfgProxy").value.trim();
+  if(proxyVal && (/^sk-/i.test(proxyVal) || !/^https?:\/\//i.test(proxyVal))){
+    const b=document.getElementById("adSave");b.textContent="✗ Proxy URL must be a https:// Worker URL — not your key";setTimeout(()=>b.textContent="Save settings",2600);return;
+  }
   const s={
     proxyUrl:document.getElementById("cfgProxy").value.trim(),
     directKey:document.getElementById("cfgKey").value.trim(),

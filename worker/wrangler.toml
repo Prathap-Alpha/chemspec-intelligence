@@ -1,6 +1,7 @@
-name = "chemspec-ai"
+name = "chemspec-ai-7227"
 main = "worker.js"
 compatibility_date = "2026-06-01"
+workers_dev = true
 
 # The DeepSeek key is NOT here. It is set as an encrypted secret:
 #   wrangler secret put DEEPSEEK_API_KEY
