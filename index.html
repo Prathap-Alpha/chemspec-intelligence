@@ -317,15 +317,19 @@
     <button data-v="stockctl"><span class="ic">▤</span> Stock Control</button>
     <button data-v="procurement"><span class="ic">⛬</span> Procurement</button>
     <button data-v="quotes"><span class="ic">◧</span> Quote Pipeline</button>
+    <button data-v="customers"><span class="ic">◍</span> Customers</button>
     <div class="navlbl">Finance</div>
     <button data-v="financials"><span class="ic">▥</span> Financials</button>
     <button data-v="ledger"><span class="ic">≣</span> General Ledger</button>
     <button data-v="debtors"><span class="ic">◷</span> Debtors &amp; AR</button>
+    <button data-v="creditors"><span class="ic">◴</span> Creditors &amp; AP</button>
     <div class="navlbl">Intelligence</div>
+    <button data-v="colourlab"><span class="ic">◐</span> Colour Lab</button>
     <button data-v="ai"><span class="ic">✦</span> AI Assistant</button>
     <div class="navlbl">Controls</div>
     <button data-v="approvals"><span class="ic">✓</span> Approvals</button>
     <button data-v="audit"><span class="ic">◉</span> Audit Trail</button>
+    <button data-v="safety"><span class="ic">⚠</span> Safety &amp; SDS</button>
     <div class="navfoot">Demo · 18 Jun 2026<br>Data is synthetic &amp; illustrative.</div>
   </nav>
 
@@ -547,6 +551,49 @@ const auditLog=[
   ["08:50","K. Molefe","Signed in via SSO","Security"],
 ];
 
+/* ── Colour Lab — formula retrieval (the paint-distributor crown jewel) ── */
+const colourFormulas=[
+  ["1G3","Grey Metallic","Toyota","STANDOX 2K","4 bases","98.6%"],
+  ["LY3D","Pearl White","Volkswagen","STANDOX 3-stage","6 bases","99.1%"],
+  ["040","Super White II","Toyota","AUTOMAX","2 bases","97.4%"],
+  ["A96","Cosmos Black","BMW","STANDOX 2K","3 bases","98.9%"],
+  ["3R3","Wine Red Mica","Toyota","STANDOX 3-stage","5 bases","96.8%"],
+  ["WHT-GOV","Fleet White (Gov tender)","Botswana Gov","AUTOMAX","2 bases","—"],
+];
+const featuredFormula={
+  title:"Toyota 1G3 · Grey Metallic", sub:"STANDOX 2K · variant 2 of 3 · spectrophotometer match",
+  parts:[["Mixing Base 11 — white",142.0],["Mixing Base 75 — aluminium",31.2],["Mixing Base 60 — black",8.4],["Mixing Base 53 — blue",2.1]],
+};
+
+/* ── Customer 360 — master + credit control ── */
+const customers=[ // name, segment, branch, creditLimit, balance, terms, lastOrder, status
+  ["Kgale Panel Beaters","Panel shop","Gaborone",150000,148200,"Net 30","2d ago","over"],
+  ["Orapa Mine Workshop","Industrial","Francistown",400000,74800,"Net 60","5d ago","ok"],
+  ["City Panel & Paint","Panel shop","Gaborone",80000,24600,"Net 30","1d ago","ok"],
+  ["BotsRail Infrastructure","Industrial","Gaborone",300000,96400,"Net 60","12d ago","ok"],
+  ["Kalahari Truck Repairs","Fleet","Francistown",120000,38400,"Net 30","3d ago","ok"],
+  ["Phakalane Motors","Panel shop","Gaborone",60000,12750,"Net 30","71d ago","dormant"],
+];
+
+/* ── Creditors / AP — supplier payables (mirror of AR) ── */
+const creditors=[ // supplier, balance, bucket, fx
+  ["Axalta / Standox (RSA)",284000,"30","ZAR import"],
+  ["Industrial Abrasives Co",62400,"current","BWP"],
+  ["SATA Spray Equipment",58800,"60","EUR import"],
+  ["Botswana Packaging Ltd",21300,"current","BWP"],
+];
+const apAging={current:248,d30:96,d60:59,d90:0}; // P'000
+
+/* ── Safety & SDS — hazardous-goods compliance (paints) ── */
+const sdsReg=[ // product, hazard, voc, sdsRev, status
+  ["STANDOX 2K HS Clear K9520","Flammable Liq. 2 · isocyanates","420 g/L","Mar 2025","current"],
+  ["STANDOX 1K Etch Primer","Flammable Liq. 2","510 g/L","Jan 2025","current"],
+  ["Corrosion HD Epoxy Primer","Skin sensitiser 1","250 g/L","Nov 2024","review"],
+  ["Hardener H-470 fast","Acute tox · isocyanate","—","Feb 2025","current"],
+  ["Thinner — standard","Flammable Liq. 2","780 g/L","Apr 2025","current"],
+  ["AUTOMAX Basecoat","Flammable Liq. 3","680 g/L","Sep 2024","review"],
+];
+
 let branch="all";
 const P=n=>"P"+n.toLocaleString("en",{maximumFractionDigits:0});
 const Pm=n=>"P"+n.toFixed(2)+"m";
@@ -568,7 +615,7 @@ function enter(){
 setInterval(()=>{const d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});},1000);
 
 /* ────────── nav ────────── */
-const titles={overview:"Executive Overview",sales:"Sales & Profitability",stock:"Predictive Stock Forecast",stockctl:"Stock Control · Paints",procurement:"Procurement & Suppliers",quotes:"Quote Pipeline",financials:"Financial Statements",ledger:"General Ledger & Trial Balance",debtors:"Debtors & Collections",ai:"Chemspec AI Assistant",approvals:"Approvals · Maker-Checker",audit:"Audit Trail"};
+const titles={overview:"Executive Overview",sales:"Sales & Profitability",stock:"Predictive Stock Forecast",stockctl:"Stock Control · Paints",procurement:"Procurement & Suppliers",quotes:"Quote Pipeline",financials:"Financial Statements",ledger:"General Ledger & Trial Balance",debtors:"Debtors & Collections",ai:"Chemspec AI Assistant",approvals:"Approvals · Maker-Checker",audit:"Audit Trail",customers:"Customers · 360 & Credit",creditors:"Creditors & AP",colourlab:"Colour Lab · Formula Retrieval",safety:"Safety & SDS · Hazardous Goods"};
 const nav=document.getElementById("nav");
 nav.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
   nav.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
@@ -647,6 +694,7 @@ function render(v){
   if(v==="debtors")afterDebtors();
   if(v==="financials")afterFinancials();
   if(v==="approvals")afterApprovals();
+  if(v==="customers"||v==="creditors")setTimeout(()=>document.querySelectorAll(".fill").forEach(f=>f.style.width=f.dataset.w+"%"),80);
 }
 
 const rev=()=>branch==="gabs"?revGabs:branch==="fran"?revFran:revAll;
@@ -906,6 +954,85 @@ const VIEWS={
     <table><thead><tr><th class="num">Time</th><th>User</th><th>Action</th><th>Module</th></tr></thead><tbody>
     ${auditLog.map(a=>`<tr><td class="num" style="color:var(--muted)">${a[0]}</td><td><b>${a[1]}</b></td><td>${a[2]}</td><td><span class="tag" style="background:var(--elev);color:var(--muted)">${a[3]}</span></td></tr>`).join("")}
     </tbody></table></div>`;
+  },
+  colourlab(){
+    const f=featuredFormula, tot=f.parts.reduce((a,p)=>a+p[1],0);
+    return `
+    <div class="grid row2">
+      <div class="card">
+        <div class="panel-h"><div class="t">${f.title}</div><span class="badge-ok">● spectro-matched</span></div>
+        <div style="color:var(--faint);font-size:12px;margin-bottom:10px">${f.sub}</div>
+        <table class="stmt-tbl">
+          ${f.parts.map(p=>`<tr class="sub"><td class="ind">${p[0]}</td><td class="amt">${p[1].toFixed(1)} g</td></tr>`).join("")}
+          <tr class="total"><td>Total base</td><td class="amt">${tot.toFixed(1)} g</td></tr>
+        </table>
+        <div style="color:var(--muted);font-size:13px;margin-top:12px;line-height:1.55">+ 50% 2K MS Hardener → + 10% thinner · 1.5–2 coats.<br><span style="color:var(--faint)">Linked SDS: K9520 · base stock at Gaborone 68 L ✓</span></div>
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">Formula library</div><div class="s">OEM colour → mixing recipe</div></div>
+        <table><thead><tr><th>Code</th><th>Colour</th><th>OEM</th><th>System</th><th class="num">Match</th></tr></thead><tbody>
+        ${colourFormulas.map(c=>`<tr><td><b>${c[0]}</b></td><td>${c[1]}</td><td style="color:var(--muted)">${c[2]}</td><td>${c[3]}<br><small style="color:var(--faint)">${c[4]}</small></td><td class="num">${c[5]}</td></tr>`).join("")}
+        </tbody></table>
+        <div style="color:var(--faint);font-size:11.5px;margin-top:10px">Decades of mixing know-how captured &amp; searchable — the owner's "internal AI assistant" for colour.</div>
+      </div>
+    </div>`;
+  },
+  customers(){
+    const over=customers.filter(c=>c[7]==="over").length, dormant=customers.filter(c=>c[7]==="dormant").length;
+    return `
+    <div class="grid kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="card kpi"><div class="lbl">Active customers</div><div class="val">214</div><div class="chg up">panel + industrial</div></div>
+      <div class="card kpi"><div class="lbl">Over credit limit</div><div class="val">${over}</div><div class="chg down">block new orders</div></div>
+      <div class="card kpi"><div class="lbl">Dormant 60d+</div><div class="val">${dormant}</div><div class="chg down">win-back</div></div>
+      <div class="card kpi"><div class="lbl">Avg days-to-pay</div><div class="val">41</div><div class="chg up">target 30</div></div>
+    </div>
+    <div class="card">
+      <div class="panel-h"><div class="t">Customer accounts · credit control</div><div class="s">limit · balance · utilisation</div></div>
+      <table><thead><tr><th>Customer</th><th>Segment</th><th>Branch</th><th class="num">Limit</th><th class="num">Balance</th><th>Utilisation</th><th>Terms</th><th>Last order</th><th>Status</th></tr></thead><tbody>
+      ${customers.map(c=>{const util=Math.round(c[4]/c[3]*100);const col=util>=100?"var(--red)":util>=80?"var(--amber)":"var(--green)";
+        return `<tr><td><b>${c[0]}</b></td><td style="color:var(--muted)">${c[1]}</td><td style="color:var(--muted)">${c[2]}</td><td class="num">P${c[3].toLocaleString()}</td><td class="num">P${c[4].toLocaleString()}</td>
+        <td><div style="height:6px;background:var(--line);border-radius:6px;overflow:hidden;min-width:88px"><i style="display:block;height:100%;width:${Math.min(util,100)}%;background:${col}"></i></div><span style="font-size:11px;color:${col};font-weight:700">${util}%</span></td>
+        <td>${c[5]}</td><td style="color:${c[7]==='dormant'?'var(--amber)':'var(--muted)'}">${c[6]}</td>
+        <td>${c[7]==='over'?'<span class="tag red">Over limit</span>':c[7]==='dormant'?'<span class="tag amb">Dormant</span>':'<span class="tag grn">Good</span>'}</td></tr>`;}).join("")}
+      </tbody></table>
+    </div>`;
+  },
+  creditors(){
+    const max=Math.max(apAging.current,apAging.d30,apAging.d60,apAging.d90);
+    const rows=[["Current",apAging.current,"var(--green)"],["30 days",apAging.d30,"var(--amber)"],["60 days",apAging.d60,"var(--brand)"],["90+ days",apAging.d90,"var(--red)"]];
+    return `
+    <div class="grid row2b">
+      <div class="card">
+        <div class="panel-h"><div class="t">AP aging</div><div class="s">P thousands</div></div>
+        <div class="funnel" style="margin-top:8px">
+          ${rows.map(r=>`<div class="stage"><div class="nm">${r[0]}</div><div class="track"><div class="fill" data-w="${max?r[1]/max*100:0}" style="background:${r[2]}">P${r[1]}k</div></div></div>`).join("")}
+        </div>
+        <div style="color:var(--faint);font-size:11.5px;margin-top:14px">Pay-run preview every Thursday; FX-exposed lines (ZAR / EUR) revalued at BoB rate before settlement.</div>
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">Top creditors</div><div class="s">who to pay</div></div>
+        <table><thead><tr><th>Supplier</th><th class="num">Balance</th><th>Bucket</th><th>FX</th></tr></thead><tbody>
+        ${creditors.map(c=>`<tr><td><b>${c[0]}</b></td><td class="num">P${c[1].toLocaleString()}</td><td><span class="tag ${c[2]==='current'?'grn':c[2]==='30'?'amb':'red'}">${c[2]==='current'?'Current':c[2]+'d'}</span></td><td style="color:${c[3].includes('import')?'var(--amber)':'var(--muted)'}">${c[3]}</td></tr>`).join("")}
+        </tbody></table>
+      </div>
+    </div>`;
+  },
+  safety(){
+    const review=sdsReg.filter(s=>s[4]==="review").length;
+    return `
+    <div class="grid kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="card kpi"><div class="lbl">SDS on file</div><div class="val">${sdsReg.length+30}</div><div class="chg up">all products</div></div>
+      <div class="card kpi"><div class="lbl">Due for review</div><div class="val">${review}</div><div class="chg down">&gt;18 months</div></div>
+      <div class="card kpi"><div class="lbl">Flammable store</div><div class="val">72%</div><div class="chg up">capacity used</div></div>
+      <div class="card kpi"><div class="lbl">Isocyanate items</div><div class="val">3</div><div class="chg down">PPE required</div></div>
+    </div>
+    <div class="card">
+      <div class="panel-h"><div class="t">Safety Data Sheet register</div><div class="s">GHS hazard · VOC · revision</div></div>
+      <table><thead><tr><th>Product</th><th>Hazard class</th><th class="num">VOC</th><th>SDS rev</th><th>Status</th></tr></thead><tbody>
+      ${sdsReg.map(s=>`<tr><td><b>${s[0]}</b></td><td style="color:var(--muted)">${s[1]}</td><td class="num">${s[2]}</td><td>${s[3]}</td><td>${s[4]==='current'?'<span class="tag grn">Current</span>':'<span class="tag amb">Review due</span>'}</td></tr>`).join("")}
+      </tbody></table>
+      <div style="color:var(--faint);font-size:11.5px;margin-top:10px">Dangerous-goods storage segregated; SDS issued with every dispatch of flammable / isocyanate product.</div>
+    </div>`;
   }
 };
 
