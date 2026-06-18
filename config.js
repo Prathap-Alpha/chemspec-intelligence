@@ -6,6 +6,6 @@
  *   2. Paste the Worker URL below and push. Leave "" for the built-in demo AI.
  */
 window.CHEMSPEC_CONFIG = {
-  AI_PROXY_URL: "",   // set to the Worker URL once DEEPSEEK_API_KEY secret is in the Worker
+  AI_PROXY_URL: "https://chemspec-ai-7227.lab72720011.workers.dev",
   MODEL: "deepseek-chat"
 };
