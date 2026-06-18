@@ -8,8 +8,8 @@
  * Deploy: see ../RUNBOOK.md  (wrangler login → secret put → deploy).
  */
 
-// Lock this to your Pages origin in production, e.g. "https://prathap-alpha.github.io"
-const ALLOW_ORIGIN = "*";
+// Only this origin may call the proxy (stops other sites + most scripts abusing the key).
+const ALLOW_ORIGIN = "https://prathap-alpha.github.io";
 
 export default {
   async fetch(req, env) {
@@ -17,9 +17,13 @@ export default {
       "Access-Control-Allow-Origin": ALLOW_ORIGIN,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
+      "Vary": "Origin",
     };
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
     if (req.method !== "POST") return json({ error: "POST only" }, 405, cors);
+    // Defence-in-depth: reject calls that aren't from the site (referer/origin).
+    const ref = (req.headers.get("Origin") || req.headers.get("Referer") || "");
+    if (!ref.startsWith(ALLOW_ORIGIN)) return json({ error: "forbidden" }, 403, cors);
     if (!env.DEEPSEEK_API_KEY) return json({ error: "Worker is missing the DEEPSEEK_API_KEY secret" }, 500, cors);
 
     let body;
@@ -41,7 +45,8 @@ export default {
         body: JSON.stringify(payload),
       });
     } catch (e) {
-      return json({ error: "upstream fetch failed: " + e.message }, 502, cors);
+      console.error("upstream error:", e.message);
+      return json({ error: "upstream unavailable" }, 502, cors);
     }
 
     const data = await r.json().catch(() => ({ error: "upstream returned non-JSON" }));

@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Chemspec Intelligence Platform</title>
 <meta name="description" content="Chemspec Intelligence — live dashboards, automation & AI for a coatings distributor." />
+<meta name="robots" content="noindex, nofollow" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://chemspec-ai-7227.lab72720011.workers.dev https://api.deepseek.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
 <script src="config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
 <script>try{if(localStorage.getItem('cs_theme')==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
 <style>
   :root{
@@ -140,7 +142,7 @@
 
   .feed{display:flex;flex-direction:column;gap:11px}
   .alert{display:flex;gap:11px;align-items:flex-start;padding:12px;border-radius:var(--r-sm);background:var(--elev);border:1px solid var(--line)}
-  .alert . chip{flex:0 0 auto}
+  .alert .chip{flex:0 0 auto}
   .alert .ico{height:30px;width:30px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
   .alert .tx{font-size:13px;line-height:1.45}
   .alert .tx b{font-weight:700}
@@ -267,7 +269,9 @@
   .reject{background:var(--elev);color:var(--muted);border:1px solid var(--line)}
   .miniact{font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:.15s var(--ease)}
   .miniact:hover{transform:translateY(-1px)}
+  main .card{overflow-x:auto}  /* wide ERP tables scroll inside the card on narrow screens */
   @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.row2,.row2b{grid-template-columns:1fr}}
+  @media(max-width:760px){#app{grid-template-columns:1fr;grid-template-areas:"top" "main"}nav,.brandcell{display:none}.kpis{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -305,8 +309,8 @@
     </div>
     <div class="clock" id="clock"></div>
     <div class="aistat" id="aistat" title="AI status">● Demo AI</div>
-    <button class="gear" id="themeBtn" title="Toggle light / dark">☀</button>
-    <button class="gear" id="adminBtn" title="Admin portal">⚙</button>
+    <button class="gear" id="themeBtn" title="Toggle light / dark" aria-label="Toggle light or dark theme">☀</button>
+    <button class="gear" id="adminBtn" title="Admin portal" aria-label="Open admin portal">⚙</button>
   </div>
 
   <nav id="nav">
@@ -1299,7 +1303,7 @@ function cannedAnswer(q,mode){const kb=KB[mode];for(const[re,a]of kb.answers){if
 /* async — uses live DeepSeek (via proxy/key) when configured, else demo answers */
 async function submitAI(){
   const inp=document.getElementById("aiq");const q=inp.value.trim();if(!q)return;inp.value="";
-  pushMsg("me",q);
+  pushMsg("me",escapeHtml(q));
   const c=document.getElementById("chat");const t=document.createElement("div");t.className="msg bot";t.innerHTML='<div class="typing"><i></i><i></i><i></i></div>';c.appendChild(t);c.scrollTop=c.scrollHeight;
   let html;
   const cfg=aiConfig();
@@ -1489,7 +1493,7 @@ let sceneRun=true;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
     const scene=new THREE.Scene();
     const camera=new THREE.PerspectiveCamera(58,1,0.1,100);camera.position.z=3.5;
-    const geo=new THREE.IcosahedronGeometry(1.25,10);
+    const geo=new THREE.IcosahedronGeometry(1.25,4);
     const base=geo.attributes.position.array.slice();
     const mat=new THREE.MeshPhongMaterial({color:0x0047ff,emissive:0x001a5e,specular:0x99b4ff,shininess:80,transparent:true,opacity:.92});
     const mesh=new THREE.Mesh(geo,mat);mesh.position.x=1.25;scene.add(mesh);
