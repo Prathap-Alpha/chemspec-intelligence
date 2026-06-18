@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chemspec Intelligence Platform</title>
+<meta name="description" content="Chemspec Intelligence — live dashboards, automation & AI for a coatings distributor." />
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#0E0F13; --surface:#16181F; --elev:#1E2129; --line:#2A2E38;
+    --text:#F4F5F7; --muted:#9AA0AB; --faint:#666B76;
+    --brand:#FF5A2C;          /* automotive spray accent */
+    --amber:#FFB000; --teal:#16C2A3; --blue:#4A8DFF; --magenta:#E0457B; --green:#3FD07E; --red:#FF4D4D;
+    --r:14px; --r-sm:9px;
+    --ease:cubic-bezier(.16,1,.3,1);
+    --sp:8px;
+    --shadow:0 20px 60px -20px rgba(0,0,0,.7);
+    font-synthesis:none;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(255,90,44,.10), transparent 60%),
+      radial-gradient(900px 500px at -5% 110%, rgba(74,141,255,.08), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  .tabnum{font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+  /* ── COVER ───────────────────────────────────────────── */
+  #cover{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+    justify-content:center;padding:0 8vw;transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  #cover.gone{opacity:0;transform:scale(1.04);pointer-events:none}
+  .swatches{display:flex;gap:6px;margin-bottom:34px}
+  .swatches i{height:10px;width:54px;border-radius:3px;transform:scaleX(0);transform-origin:left;
+    animation:grow .7s var(--ease) forwards}
+  @keyframes grow{to{transform:scaleX(1)}}
+  .kicker{color:var(--brand);font-weight:700;letter-spacing:.28em;font-size:12px;text-transform:uppercase;margin-bottom:18px;
+    opacity:0;animation:rise .7s var(--ease) .15s forwards}
+  #cover h1{font-size:clamp(40px,7vw,86px);line-height:.98;font-weight:800;letter-spacing:-.03em;max-width:14ch;
+    opacity:0;animation:rise .8s var(--ease) .25s forwards}
+  #cover h1 span{color:var(--brand)}
+  .tagline{color:var(--muted);font-size:clamp(16px,2vw,22px);margin-top:22px;font-style:italic;
+    opacity:0;animation:rise .8s var(--ease) .4s forwards}
+  .pillars{display:flex;flex-wrap:wrap;gap:10px;margin-top:38px;max-width:880px}
+  .pillars span{border:1px solid var(--line);background:var(--surface);padding:9px 15px;border-radius:999px;
+    font-size:13px;color:var(--muted);opacity:0;animation:rise .6s var(--ease) forwards}
+  .pillars span b{color:var(--text);font-weight:600}
+  .cta{margin-top:46px;display:flex;align-items:center;gap:18px;opacity:0;animation:rise .7s var(--ease) .9s forwards}
+  .enter{background:var(--brand);color:#160a05;border:none;font-weight:700;font-size:16px;padding:15px 30px;
+    border-radius:11px;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease);
+    box-shadow:0 10px 30px -8px rgba(255,90,44,.6)}
+  .enter:hover{transform:translateY(-2px);box-shadow:0 16px 40px -8px rgba(255,90,44,.8)}
+  .byline{color:var(--faint);font-size:13px}
+  .byline b{color:var(--muted)}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── APP SHELL ───────────────────────────────────────── */
+  #app{position:fixed;inset:0;display:grid;grid-template-columns:230px 1fr;grid-template-rows:62px 1fr;
+    grid-template-areas:"brand top" "nav main";opacity:0;transition:opacity .6s var(--ease) .2s}
+  #app.show{opacity:1}
+  .brandcell{grid-area:brand;display:flex;align-items:center;gap:11px;padding:0 20px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .logo{height:30px;width:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--amber));
+    display:grid;place-items:center;font-weight:900;color:#160a05;font-size:16px;box-shadow:0 4px 14px -3px rgba(255,90,44,.6)}
+  .brandcell .nm{font-weight:800;letter-spacing:-.02em;font-size:16px}
+  .brandcell .nm small{display:block;color:var(--faint);font-weight:600;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase}
+
+  .topbar{grid-area:top;display:flex;align-items:center;gap:18px;padding:0 24px;border-bottom:1px solid var(--line)}
+  .topbar .ttl{font-weight:700;font-size:15px}
+  .topbar .live{display:flex;align-items:center;gap:7px;color:var(--green);font-size:12px;font-weight:600}
+  .dot{height:7px;width:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(63,208,126,.6);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,208,126,.5)}70%{box-shadow:0 0 0 7px rgba(63,208,126,0)}100%{box-shadow:0 0 0 0 rgba(63,208,126,0)}}
+  .spacer{flex:1}
+  .branch{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:3px}
+  .branch button{background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;padding:6px 13px;border-radius:6px;cursor:pointer;transition:.2s var(--ease)}
+  .branch button.on{background:var(--elev);color:var(--text)}
+  .clock{color:var(--muted);font-size:13px}
+  .pwr{color:var(--faint);font-size:11px}
+  .pwr b{color:var(--brand)}
+
+  nav{grid-area:nav;border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px;position:relative}
+  nav button{display:flex;align-items:center;gap:12px;background:none;border:none;color:var(--muted);
+    font-size:14px;font-weight:600;padding:11px 14px;border-radius:10px;cursor:pointer;text-align:left;
+    transition:color .2s var(--ease),background .2s var(--ease);position:relative;z-index:1}
+  nav button .ic{width:18px;text-align:center;font-size:15px}
+  nav button:hover{color:var(--text)}
+  nav button.on{color:var(--text)}
+  #navpill{position:absolute;left:12px;right:12px;height:42px;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;z-index:0;transition:transform .35s var(--ease);box-shadow:inset 2px 0 0 var(--brand)}
+  .navfoot{margin-top:auto;color:var(--faint);font-size:11px;padding:12px 14px;line-height:1.5}
+
+  main{grid-area:main;overflow-y:auto;padding:26px 30px 60px}
+  main::-webkit-scrollbar{width:9px}main::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+  .view{display:none}.view.active{display:block}
+  .reveal{opacity:0;transform:translateY(14px);animation:rise .6s var(--ease) forwards}
+  h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.16em;color:var(--faint);margin-bottom:16px;font-weight:700}
+
+  /* cards */
+  .grid{display:grid;gap:14px}
+  .kpis{grid-template-columns:repeat(6,1fr);margin-bottom:22px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .kpi .lbl{color:var(--muted);font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .kpi .val{font-size:27px;font-weight:800;margin-top:10px}
+  .kpi .chg{font-size:12px;font-weight:700;margin-top:6px}
+  .chg.up{color:var(--green)}.chg.down{color:var(--red)}
+  .kpi .bar{height:3px;border-radius:3px;margin-top:13px;background:var(--line);overflow:hidden}
+  .kpi .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--amber));width:0;transition:width 1s var(--ease)}
+
+  .row2{grid-template-columns:1.6fr 1fr}
+  .row2b{grid-template-columns:1fr 1fr}
+  .panel-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .panel-h .t{font-weight:700;font-size:15px}
+  .panel-h .s{color:var(--faint);font-size:12px}
+
+  .feed{display:flex;flex-direction:column;gap:11px}
+  .alert{display:flex;gap:11px;align-items:flex-start;padding:12px;border-radius:var(--r-sm);background:var(--elev);border:1px solid var(--line)}
+  .alert . chip{flex:0 0 auto}
+  .alert .ico{height:30px;width:30px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
+  .alert .tx{font-size:13px;line-height:1.45}
+  .alert .tx b{font-weight:700}
+  .alert .tx small{display:block;color:var(--faint);margin-top:2px;font-size:11.5px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.07em;padding:9px 10px;border-bottom:1px solid var(--line)}
+  td{padding:11px 10px;border-bottom:1px solid var(--line);color:var(--text)}
+  tr:last-child td{border-bottom:none}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .tag.red{background:rgba(255,77,77,.14);color:#ff8585}
+  .tag.amb{background:rgba(255,176,0,.14);color:var(--amber)}
+  .tag.grn{background:rgba(63,208,126,.14);color:var(--green)}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;height:10px;width:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+  /* debtor reminder email */
+  .mail{background:#fff;color:#1a1d24;border-radius:var(--r-sm);overflow:hidden;font-size:13px}
+  .mail .mh{background:var(--brand);color:#fff;padding:13px 16px;font-weight:700}
+  .mail .mb{padding:16px;line-height:1.55}
+  .mail .mb p{margin-bottom:10px}
+  .mail .stmt{border:1px solid #e3e6ea;border-radius:7px;padding:10px;font-variant-numeric:tabular-nums}
+  .mail .stmt div{display:flex;justify-content:space-between;padding:3px 0}
+  .mail .stmt .tot{border-top:1px solid #e3e6ea;margin-top:5px;padding-top:7px;font-weight:800}
+  .sendbtn{margin-top:14px;background:var(--brand);color:#160a05;border:none;font-weight:700;padding:11px 18px;border-radius:9px;cursor:pointer;transition:.2s var(--ease)}
+  .sendbtn:hover{transform:translateY(-1px)}
+  .sendbtn.sent{background:var(--green);color:#06210f}
+
+  /* quote funnel */
+  .funnel{display:flex;flex-direction:column;gap:9px}
+  .stage{display:flex;align-items:center;gap:14px}
+  .stage .nm{width:90px;color:var(--muted);font-size:13px;font-weight:600}
+  .stage .track{flex:1;height:34px;background:var(--elev);border-radius:8px;overflow:hidden}
+  .stage .fill{height:100%;width:0;border-radius:8px;display:flex;align-items:center;padding-left:12px;
+    font-weight:800;font-size:13px;color:#fff;transition:width 1s var(--ease)}
+
+  /* AI assistant */
+  .ai{display:grid;grid-template-rows:auto 1fr auto;height:calc(100vh - 150px);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .ai-top{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .ai-top .face{height:34px;width:34px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--magenta));display:grid;place-items:center;font-size:16px}
+  .ai-top .mode{margin-left:auto;display:flex;background:var(--elev);border:1px solid var(--line);border-radius:8px;padding:3px}
+  .ai-top .mode button{background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer}
+  .ai-top .mode button.on{background:var(--bg);color:var(--text)}
+  .chat{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .chat::-webkit-scrollbar{width:8px}.chat::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+  .msg{max-width:74%;padding:12px 15px;border-radius:14px;font-size:13.5px;line-height:1.5;animation:rise .4s var(--ease)}
+  .msg.bot{background:var(--elev);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+  .msg.me{background:var(--brand);color:#160a05;align-self:flex-end;border-bottom-right-radius:4px;font-weight:500}
+  .msg b{font-weight:800}
+  .msg ul{margin:6px 0 0 18px}.msg li{margin:3px 0}
+  .typing{display:flex;gap:4px;padding:14px}.typing i{height:7px;width:7px;border-radius:50%;background:var(--faint);animation:blink 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+  .sugg{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 12px}
+  .sugg button{background:var(--elev);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:8px 13px;border-radius:999px;cursor:pointer;transition:.2s var(--ease)}
+  .sugg button:hover{color:var(--text);border-color:var(--brand)}
+  .ai-in{display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--line)}
+  .ai-in input{flex:1;background:var(--elev);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:12px 15px;font-size:14px;outline:none}
+  .ai-in input:focus{border-color:var(--brand)}
+  .ai-in button{background:var(--brand);color:#160a05;border:none;font-weight:700;padding:0 20px;border-radius:10px;cursor:pointer}
+
+  .mb14{margin-bottom:14px}.mb22{margin-bottom:22px}
+
+  /* topbar AI status + gear */
+  .aistat{font-size:11px;font-weight:700;color:var(--faint);border:1px solid var(--line);background:var(--surface);padding:5px 10px;border-radius:999px;white-space:nowrap}
+  .aistat.live{color:var(--green);border-color:rgba(63,208,126,.4)}
+  .gear{background:var(--surface);border:1px solid var(--line);color:var(--muted);height:34px;width:34px;border-radius:9px;cursor:pointer;font-size:15px;transition:.2s var(--ease)}
+  .gear:hover{color:var(--text);border-color:var(--brand);transform:rotate(45deg)}
+
+  /* ── ADMIN overlay ── */
+  #admin{position:fixed;inset:0;z-index:80;background:rgba(8,9,12,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
+  #admin.show{display:flex}
+  .adcard{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;animation:rise .4s var(--ease)}
+  .adhead{display:flex;align-items:center;gap:12px;padding:20px 24px;border-bottom:1px solid var(--line)}
+  .adhead .logo{height:34px;width:34px;font-size:17px}
+  .adhead h3{font-size:17px;font-weight:800}
+  .adhead .x{margin-left:auto;background:none;border:none;color:var(--faint);font-size:22px;cursor:pointer;line-height:1}
+  .adbody{padding:24px}
+  .adbody label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:16px 0 7px;text-transform:uppercase;letter-spacing:.05em}
+  .adbody label:first-child{margin-top:0}
+  .adbody input,.adbody textarea,.adbody select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:12px 14px;font-size:14px;outline:none;font-family:inherit}
+  .adbody input:focus,.adbody textarea:focus,.adbody select:focus{border-color:var(--brand)}
+  .adbody textarea{min-height:80px;resize:vertical;line-height:1.5}
+  .adbtn{width:100%;background:var(--brand);color:#160a05;border:none;font-weight:800;font-size:15px;padding:14px;border-radius:11px;cursor:pointer;margin-top:22px;transition:.2s var(--ease)}
+  .adbtn:hover{transform:translateY(-1px)}
+  .adbtn.sec{background:var(--elev);color:var(--text);border:1px solid var(--line)}
+  .aderr{color:#ff8585;font-size:13px;margin-top:12px;min-height:18px;font-weight:600}
+  .adnote{color:var(--faint);font-size:11.5px;margin-top:7px;line-height:1.5}
+  .adrow{display:flex;gap:12px}.adrow>*{flex:1}
+  .adtoggle{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+  .adtoggle span{font-size:13px;font-weight:600}
+  .sw{position:relative;width:42px;height:24px;background:var(--line);border-radius:999px;cursor:pointer;transition:.2s;flex:0 0 auto}
+  .sw.on{background:var(--brand)}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;height:18px;width:18px;border-radius:50%;background:#fff;transition:.2s var(--ease)}
+  .sw.on::after{transform:translateX(18px)}
+  .pill-state{display:inline-block;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--elev);color:var(--faint);margin-bottom:4px}
+  .pill-state.live{background:rgba(63,208,126,.15);color:var(--green)}
+  @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.row2,.row2b{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ─────────── COVER ─────────── -->
+<div id="cover">
+  <div class="swatches" id="sw"></div>
+  <div class="kicker">Intelligence &amp; Automation Platform</div>
+  <h1>The <span>Chemspec</span> Intelligence Platform</h1>
+  <div class="tagline">"Let us bring your project to life" — now with a brain behind it.</div>
+  <div class="pillars" id="pillars"></div>
+  <div class="cta">
+    <button class="enter" onclick="enter()">Enter live platform →</button>
+    <div class="byline">Built on top of <b>Fincon</b> — your system of record stays. Synthetic demo data.</div>
+  </div>
+</div>
+
+<!-- ─────────── APP ─────────── -->
+<div id="app">
+  <div class="brandcell">
+    <div class="logo">C</div>
+    <div class="nm">Chemspec<small>Intelligence</small></div>
+  </div>
+
+  <div class="topbar">
+    <div class="ttl" id="vtitle">Executive Overview</div>
+    <div class="live"><span class="dot"></span> Live · syncing Fincon</div>
+    <div class="spacer"></div>
+    <div class="branch" id="branch">
+      <button class="on" data-b="all">All branches</button>
+      <button data-b="gabs">Gaborone</button>
+      <button data-b="fran">Francistown</button>
+    </div>
+    <div class="clock" id="clock"></div>
+    <div class="aistat" id="aistat" title="AI status">● Demo AI</div>
+    <button class="gear" id="adminBtn" title="Admin portal">⚙</button>
+  </div>
+
+  <nav id="nav">
+    <div id="navpill"></div>
+    <button class="on" data-v="overview"><span class="ic">▦</span> Overview</button>
+    <button data-v="sales"><span class="ic">▤</span> Sales &amp; Profit</button>
+    <button data-v="stock"><span class="ic">▣</span> Stock Forecast</button>
+    <button data-v="debtors"><span class="ic">◷</span> Debtors</button>
+    <button data-v="quotes"><span class="ic">◧</span> Quote Pipeline</button>
+    <button data-v="ai"><span class="ic">✦</span> AI Assistant</button>
+    <div class="navfoot">Demo · 18 Jun 2026<br>Data is synthetic &amp; illustrative.</div>
+  </nav>
+
+  <main id="main"></main>
+</div>
+
+<!-- ─────────── ADMIN PORTAL ─────────── -->
+<div id="admin">
+  <div class="adcard">
+    <div class="adhead">
+      <div class="logo">C</div>
+      <h3 id="adTitle">Admin sign in</h3>
+      <button class="x" id="adClose">×</button>
+    </div>
+
+    <!-- login -->
+    <div class="adbody" id="adLogin">
+      <label>Email</label>
+      <input id="adEmail" type="email" placeholder="you@company.com" autocomplete="username" />
+      <label>Password</label>
+      <input id="adPass" type="password" placeholder="••••••••" autocomplete="current-password" />
+      <div class="aderr" id="adErr"></div>
+      <button class="adbtn" id="adLoginBtn">Sign in</button>
+      <div class="adnote">Demo access gate. Settings save to this browser only. No API keys are stored in the website code.</div>
+    </div>
+
+    <!-- settings -->
+    <div class="adbody" id="adPanel" style="display:none">
+      <div class="pill-state" id="adState">AI: Demo mode</div>
+      <label>AI proxy URL <span style="color:var(--green)">(recommended)</span></label>
+      <input id="cfgProxy" type="url" placeholder="https://chemspec-ai.<you>.workers.dev/chat" />
+      <div class="adnote">Your DeepSeek key stays on the server (Cloudflare Worker), never in this site. See RUNBOOK.md to deploy in ~5 min.</div>
+
+      <label>DeepSeek API key <span style="color:var(--faint)">(advanced / local only)</span></label>
+      <input id="cfgKey" type="password" placeholder="sk-… (kept in this browser only)" autocomplete="off" />
+      <div class="adnote">⚠ Browser-stored key may be blocked by CORS and is visible in this browser. Prefer the proxy URL above for anything shared.</div>
+
+      <div class="adrow">
+        <div><label>Model</label>
+          <select id="cfgModel"><option value="deepseek-chat">deepseek-chat</option><option value="deepseek-reasoner">deepseek-reasoner</option></select></div>
+        <div><label>Temperature</label>
+          <input id="cfgTemp" type="number" min="0" max="2" step="0.1" value="0.4" /></div>
+      </div>
+
+      <label>Assistant persona / system prompt</label>
+      <textarea id="cfgPersona"></textarea>
+
+      <label style="margin-top:20px">Automations</label>
+      <div class="adtoggle"><span>Live AI assistant</span><div class="sw" id="tgAI" data-k="liveAI"></div></div>
+      <div class="adtoggle"><span>Auto debtor reminders</span><div class="sw on" id="tgRem" data-k="autoRem"></div></div>
+      <div class="adtoggle"><span>Predictive stock alerts</span><div class="sw on" id="tgStk" data-k="autoStock"></div></div>
+
+      <button class="adbtn" id="adTest">Test AI connection</button>
+      <div class="aderr" id="adTestMsg" style="color:var(--muted)"></div>
+      <button class="adbtn" id="adSave">Save settings</button>
+      <button class="adbtn sec" id="adLogout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ────────── synthetic Chemspec data ────────── */
+const M = ["Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May","Jun"];
+const revAll = [1.42,1.55,1.38,1.71,1.66,1.49,1.58,1.74,1.88,1.79,1.95,2.08]; // P millions
+const revGabs= revAll.map(v=>+(v*0.64).toFixed(2));
+const revFran= revAll.map((v,i)=>+(v-revGabs[i]).toFixed(2));
+const marginPct=[31,33,30,34,33,32,34,35,36,35,37,38];
+
+const products=[
+  ["STANDOX 2K HS Clear K9520","Automotive",612,38],
+  ["AUTOMAX Basecoat (mix base)","Automotive",548,29],
+  ["STANDOX 1K Etch Primer","Automotive",333,41],
+  ["Corrosion HD Epoxy Primer","Industrial",287,44],
+  ["Abrasives & sanding discs","Consumables",241,52],
+  ["Masking tape & films","Consumables",198,58],
+  ["Spray guns & equipment","Equipment",176,33],
+  ["Thinners & hardeners","Ancillary",154,36],
+];
+
+const stockRaw=[ // name, branch, on-hand, weekly demand
+  ["STANDOX 2K HS Clear K9520","Gaborone",17,11],
+  ["AUTOMAX Basecoat — Arctic White","Gaborone",40,9],
+  ["Corrosion HD Epoxy Primer 20L","Francistown",5,3],
+  ["STANDOX 1K Etch Primer","Gaborone",96,8],
+  ["Sanding discs P400 (box)","Francistown",90,22],
+  ["Masking film 4m (roll)","Gaborone",420,30],
+  ["Hardener H-470 fast","Gaborone",14,7],
+  ["Spray gun SATA 5000B","Francistown",4,1],
+];
+// days-to-stockout = on-hand / weekly demand × 7; flag <15 red, <35 amber, else healthy
+const stock=stockRaw.map(s=>{const days=Math.round(s[2]/s[3]*7);const f=days<15?"red":days<35?"amb":"grn";return[s[0],s[1],s[2],s[3],days,f];});
+
+const debtors=[
+  ["Kgale Panel Beaters",148200,"90+"],
+  ["BotsRail Infrastructure",96400,"60"],
+  ["Orapa Mine Workshop",74800,"60"],
+  ["Gaborone Auto Body",41300,"30"],
+  ["Northern Coatings FT",28900,"30"],
+  ["Phakalane Motors","12750","current"],
+];
+const aging={current:386,d30:212,d60:171,d90:189}; // P thousands
+
+const quoteStages=[["Drafted",84,"var(--faint)"],["Sent",61,"var(--blue)"],["Negotiation",37,"var(--amber)"],["Won",26,"var(--green)"],["Lost",11,"var(--red)"]];
+const recentQuotes=[
+  ["Q-2261","Kalahari Truck Repairs","Full respray kit · STANDOX",58400,"Sent"],
+  ["Q-2260","Selebi Mine Maintenance","Corrosion epoxy system",132900,"Negotiation"],
+  ["Q-2259","City Panel & Paint","AUTOMAX base + clear",24600,"Won"],
+  ["Q-2258","Francistown Marine","Anti-fouling + primer",47100,"Sent"],
+];
+
+let branch="all";
+const P=n=>"P"+n.toLocaleString("en",{maximumFractionDigits:0});
+const Pm=n=>"P"+n.toFixed(2)+"m";
+
+/* ────────── cover build ────────── */
+const swc=["--brand","--amber","--teal","--blue","--magenta","--green"];
+document.getElementById("sw").innerHTML=swc.map((c,i)=>`<i style="background:var(${c});animation-delay:${i*.07}s"></i>`).join("");
+const pillarTxt=[["Live","exec dashboards"],["Auto","statements & reminders"],["Predict","stock replenishment"],["Track","quotes & conversion"],["Capture","technical know-how (AI)"],["Serve","customers via AI channel"]];
+document.getElementById("pillars").innerHTML=pillarTxt.map((p,i)=>`<span style="animation-delay:${.5+i*.06}s"><b>${p[0]}</b> ${p[1]}</span>`).join("");
+
+function enter(){
+  document.getElementById("cover").classList.add("gone");
+  const app=document.getElementById("app"); app.style.display="grid";
+  requestAnimationFrame(()=>app.classList.add("show"));
+  render("overview");
+}
+
+/* clock */
+setInterval(()=>{const d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});},1000);
+
+/* ────────── nav ────────── */
+const titles={overview:"Executive Overview",sales:"Sales & Profitability",stock:"Predictive Stock Forecast",debtors:"Debtors & Collections",quotes:"Quote Pipeline",ai:"Chemspec AI Assistant"};
+const nav=document.getElementById("nav"), pill=document.getElementById("navpill");
+nav.querySelectorAll("button").forEach((b,i)=>b.addEventListener("click",()=>{
+  nav.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); movePill(b); render(b.dataset.v);
+}));
+function movePill(b){const r=b.getBoundingClientRect(),p=b.parentElement.getBoundingClientRect();pill.style.transform=`translateY(${r.top-p.top-16}px)`;}
+window.addEventListener("load",()=>{const f=nav.querySelector("button.on");if(f)movePill(f);});
+
+/* branch toggle */
+document.getElementById("branch").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+  document.getElementById("branch").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); branch=b.dataset.b;
+  const cur=nav.querySelector("button.on").dataset.v; render(cur);
+}));
+
+/* ────────── count-up ────────── */
+function countUp(el,to,pre="",suf="",dec=0){
+  const start=performance.now(),dur=900;
+  function step(t){let p=Math.min((t-start)/dur,1);p=1-Math.pow(1-p,3);
+    el.textContent=pre+(to*p).toLocaleString("en",{minimumFractionDigits:dec,maximumFractionDigits:dec})+suf;
+    if(p<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);
+}
+
+/* ────────── SVG helpers ────────── */
+function areaChart(data,line){
+  const w=620,h=210,pad=28,max=Math.max(...data)*1.15;
+  const x=i=>pad+i*((w-pad*2)/(data.length-1));
+  const y=v=>h-pad-(v/max)*(h-pad*1.4);
+  let p=data.map((v,i)=>`${x(i)},${y(v)}`).join(" ");
+  let area=`${pad},${h-pad} `+p+` ${x(data.length-1)},${h-pad}`;
+  const lp=line.map((v,i)=>`${x(i)},${h-pad-(v/45)*(h-pad*1.4)}`).join(" ");
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" style="display:block">
+    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--brand)" stop-opacity=".45"/><stop offset="1" stop-color="var(--brand)" stop-opacity="0"/></linearGradient></defs>
+    ${[0,.5,1].map(g=>`<line x1="${pad}" x2="${w-pad}" y1="${pad+g*(h-pad*1.8)}" y2="${pad+g*(h-pad*1.8)}" stroke="var(--line)"/>`).join("")}
+    <polygon points="${area}" fill="url(#ag)"/>
+    <polyline points="${p}" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="${lp}" fill="none" stroke="var(--amber)" stroke-width="2" stroke-dasharray="4 4" opacity=".9"/>
+    ${data.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="var(--brand)"/>`).join("")}
+    ${M.map((m,i)=>`<text x="${x(i)}" y="${h-7}" fill="var(--faint)" font-size="10" text-anchor="middle">${m}</text>`).join("")}
+  </svg>`;
+}
+function barChart(data){
+  const w=620,h=210,pad=28,max=Math.max(...data)*1.15,bw=(w-pad*2)/data.length*.6;
+  const x=i=>pad+i*((w-pad*2)/data.length)+((w-pad*2)/data.length-bw)/2;
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" style="display:block">
+    ${data.map((v,i)=>{const bh=(v/max)*(h-pad*1.6);return `<rect x="${x(i)}" y="${h-pad-bh}" width="${bw}" height="${bh}" rx="4" fill="var(--brand)" opacity="${.55+ .4*(v/max)}"><animate attributeName="height" from="0" to="${bh}" dur="0.8s" fill="freeze"/><animate attributeName="y" from="${h-pad}" to="${h-pad-bh}" dur="0.8s" fill="freeze"/></rect>`}).join("")}
+    ${M.map((m,i)=>`<text x="${x(i)+bw/2}" y="${h-7}" fill="var(--faint)" font-size="10" text-anchor="middle">${m}</text>`).join("")}
+  </svg>`;
+}
+function donut(parts){ // [[label,val,color]]
+  const tot=parts.reduce((s,p)=>s+p[1],0);let a=-Math.PI/2,r=70,cx=90,cy=90,seg="";
+  parts.forEach(p=>{const ang=p[1]/tot*Math.PI*2,a2=a+ang;
+    const x1=cx+r*Math.cos(a),y1=cy+r*Math.sin(a),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2);
+    seg+=`<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${ang>Math.PI?1:0} 1 ${x2} ${y2} Z" fill="${p[2]}" opacity=".9"/>`;a=a2;});
+  return `<svg viewBox="0 0 180 180" width="180" height="180">${seg}<circle cx="${cx}" cy="${cy}" r="42" fill="var(--surface)"/>
+    <text x="${cx}" y="${cy-2}" fill="var(--text)" font-size="22" font-weight="800" text-anchor="middle">${tot}%</text>
+    <text x="${cx}" y="${cy+15}" fill="var(--faint)" font-size="10" text-anchor="middle">of revenue</text></svg>`;
+}
+function spark(seed){
+  const pts=Array.from({length:8},(_,i)=>5+((Math.sin(seed+i)*0.5+0.5)*15));
+  const w=70,h=22;const x=i=>i*(w/7);const y=v=>h-v;
+  return `<svg width="${w}" height="${h}"><polyline points="${pts.map((v,i)=>`${x(i)},${y(v)}`).join(" ")}" fill="none" stroke="var(--blue)" stroke-width="1.6"/></svg>`;
+}
+
+/* ────────── views ────────── */
+function render(v){
+  document.getElementById("vtitle").textContent=titles[v];
+  const main=document.getElementById("main");
+  main.querySelectorAll(".view").forEach(x=>x.remove());
+  const el=document.createElement("div");el.className="view active reveal";
+  el.innerHTML=VIEWS[v]();
+  main.appendChild(el); main.scrollTop=0;
+  if(v==="overview")afterOverview();
+  if(v==="quotes")afterQuotes();
+  if(v==="ai")afterAI();
+  if(v==="debtors")afterDebtors();
+}
+
+const rev=()=>branch==="gabs"?revGabs:branch==="fran"?revFran:revAll;
+const scale=()=>branch==="all"?1:branch==="gabs"?0.64:0.36;
+
+const VIEWS={
+  overview(){
+    const r=rev();const mtd=r[11], ytd=r.reduce((a,b)=>a+b,0);
+    const k=[
+      ["Revenue · MTD",Pm(mtd),"+6.7%","up",92],
+      ["Gross margin",marginPct[11]+"%","+1.0pt","up",76],
+      ["Cash on hand","P"+(2.34*scale()).toFixed(2)+"m","+P180k","up",64],
+      ["Debtors o/s","P"+(958*scale()).toFixed(0)+"k","-P64k","up",54],
+      ["Stock value","P"+(3.12*scale()).toFixed(2)+"m","+2.1%","down",70],
+      ["Quote conv.","31%","+4pt","up",62],
+    ];
+    return `
+    <div class="grid kpis">${k.map((x,i)=>`
+      <div class="card kpi" style="animation-delay:${i*.05}s">
+        <div class="lbl">${x[0]}</div>
+        <div class="val tabnum" data-v="${i}">—</div>
+        <div class="chg ${x[3]}">${x[2]}</div>
+        <div class="bar"><i data-w="${x[4]}"></i></div>
+      </div>`).join("")}
+    </div>
+    <div class="grid row2">
+      <div class="card">
+        <div class="panel-h"><div class="t">Revenue &amp; margin · 12 months</div><div class="s">P millions</div></div>
+        ${areaChart(r,marginPct)}
+        <div class="legend"><span><i style="background:var(--brand)"></i>Revenue</span><span><i style="background:var(--amber)"></i>Gross margin %</span></div>
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">What needs you today</div></div>
+        <div class="feed">
+          ${alertRow("var(--red)","⚠","3 SKUs predicted to stock out","STANDOX 2K Clear ~11 days · Epoxy Primer FT ~12 · Hardener H-470 ~14")}
+          ${alertRow("var(--amber)","P","P148k overdue 90+ days","Kgale Panel Beaters — auto-reminder ready to send")}
+          ${alertRow("var(--blue)","◧","Q-2260 worth P133k in negotiation","Selebi Mine corrosion system — follow up flagged")}
+          ${alertRow("var(--green)","↑","Francistown up 14% MoM","Industrial coatings driving the lift")}
+        </div>
+      </div>
+    </div>`;
+  },
+  sales(){
+    const r=rev();
+    return `
+    <div class="grid row2">
+      <div class="card">
+        <div class="panel-h"><div class="t">Revenue by month</div><div class="s">${branch==="all"?"All branches":branch==="gabs"?"Gaborone":"Francistown"}</div></div>
+        ${barChart(r)}
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">Branch split</div></div>
+        <div style="display:flex;align-items:center;gap:18px">
+          ${donut([["Gaborone",64,"var(--brand)"],["Francistown",36,"var(--blue)"]])}
+          <div class="legend" style="flex-direction:column;gap:10px;margin:0">
+            <span><i style="background:var(--brand)"></i>Gaborone · P${(rev().reduce((a,b)=>a+b,0)*0.64).toFixed(1)}m</span>
+            <span><i style="background:var(--blue)"></i>Francistown · P${(rev().reduce((a,b)=>a+b,0)*0.36).toFixed(1)}m</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="panel-h"><div class="t">Top products · trailing 12 months</div><div class="s">units (000s) · margin %</div></div>
+      <table><thead><tr><th>Product</th><th>Category</th><th class="num">Units</th><th class="num">Margin</th><th>Trend</th></tr></thead><tbody>
+      ${products.map((p,i)=>`<tr><td><b>${p[0]}</b></td><td style="color:var(--muted)">${p[1]}</td><td class="num">${p[2]}</td><td class="num">${p[3]}%</td><td>${spark(i*2+1)}</td></tr>`).join("")}
+      </tbody></table>
+    </div>`;
+  },
+  stock(){
+    const flagged=stock.filter(s=>s[5]!=="grn").length;
+    return `
+    <div class="card mb14" style="display:flex;align-items:center;gap:18px;border-left:3px solid var(--brand)">
+      <div style="font-size:30px">📦</div>
+      <div><div style="font-weight:800;font-size:17px">Predictive replenishment</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:3px"><b style="color:var(--brand)">${flagged} of ${stock.length}</b> items need attention. Forecast uses 12-month demand velocity + seasonality, not gut feel.</div></div>
+    </div>
+    <div class="card">
+      <table><thead><tr><th>SKU</th><th>Branch</th><th class="num">On hand</th><th class="num">Wkly demand</th><th class="num">Days to stockout</th><th>Demand</th><th>Action</th></tr></thead><tbody>
+      ${stock.map((s,i)=>`<tr>
+        <td><b>${s[0]}</b></td><td style="color:var(--muted)">${s[1]}</td>
+        <td class="num">${s[2]}</td><td class="num">${s[3]}</td>
+        <td class="num" style="font-weight:800;color:${s[5]==='red'?'var(--red)':s[5]==='amb'?'var(--amber)':'var(--text)'}">${s[4]} d</td>
+        <td>${spark(i+3)}</td>
+        <td>${s[5]==='red'?'<span class="tag red">Reorder now</span>':s[5]==='amb'?'<span class="tag amb">Reorder soon</span>':'<span class="tag grn">Healthy</span>'}</td>
+      </tr>`).join("")}
+      </tbody></table>
+    </div>`;
+  },
+  debtors(){
+    return `
+    <div class="grid row2b">
+      <div class="card">
+        <div class="panel-h"><div class="t">Debtor aging</div><div class="s">P thousands</div></div>
+        <div class="funnel" style="margin-top:8px">
+          ${agingBar("Current",aging.current,"var(--green)",aging.current)}
+          ${agingBar("30 days",aging.d30,"var(--amber)",aging.current)}
+          ${agingBar("60 days",aging.d60,"var(--brand)",aging.current)}
+          ${agingBar("90+ days",aging.d90,"var(--red)",aging.current)}
+        </div>
+        <div style="margin-top:18px"><div class="panel-h"><div class="t" style="font-size:14px">Top overdue</div></div>
+        <table><tbody>
+        ${debtors.filter(d=>d[2]!=="current").map(d=>`<tr><td><b>${d[0]}</b></td><td><span class="tag ${d[2]==='90+'?'red':'amb'}">${d[2]}d</span></td><td class="num">${P(+d[1])}</td></tr>`).join("")}
+        </tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">Auto-statement &amp; reminder</div><div class="s">draft · ready to send</div></div>
+        <div class="mail">
+          <div class="mh">Chemspec Botswana — Statement reminder</div>
+          <div class="mb">
+            <p>Dear <b>Kgale Panel Beaters</b>,</p>
+            <p>A gentle reminder that the following balance is now <b>90+ days</b> overdue. Please arrange settlement so we can keep your account flowing.</p>
+            <div class="stmt">
+              <div><span>Invoice INV-4471</span><span>P 92,400</span></div>
+              <div><span>Invoice INV-4502</span><span>P 55,800</span></div>
+              <div class="tot"><span>Total overdue</span><span>P 148,200</span></div>
+            </div>
+            <p style="margin-top:10px">Pay via FNB 6201xxxx or contact accounts@chemspec.co.bw. Thank you for your business.</p>
+          </div>
+        </div>
+        <button class="sendbtn" id="sendrem">Send 14 reminders automatically</button>
+        <div style="color:var(--faint);font-size:12px;margin-top:10px">Runs every Monday 07:00 · escalates 30→60→90 day tone automatically.</div>
+      </div>
+    </div>`;
+  },
+  quotes(){
+    return `
+    <div class="grid row2b">
+      <div class="card">
+        <div class="panel-h"><div class="t">Pipeline this quarter</div><div class="s">${quoteStages[3][1]} won / ${quoteStages.reduce((a,b)=>a+b[1],0)} total</div></div>
+        <div class="funnel">
+          ${quoteStages.map(s=>`<div class="stage"><div class="nm">${s[0]}</div><div class="track"><div class="fill" data-w="${s[1]/84*100}" style="background:${s[2]}">${s[1]}</div></div></div>`).join("")}
+        </div>
+        <div class="card" style="margin-top:16px;background:var(--elev);display:flex;align-items:center;justify-content:space-between">
+          <div><div style="color:var(--muted);font-size:13px">Quote → order conversion</div>
+          <div style="font-size:30px;font-weight:800;color:var(--green)">31%</div></div>
+          <div style="color:var(--faint);font-size:12px;text-align:right">+4pt vs last quarter<br>industry benchmark ~24%</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">Recent quotes</div></div>
+        <table><thead><tr><th>Ref</th><th>Customer</th><th class="num">Value</th><th>Stage</th></tr></thead><tbody>
+        ${recentQuotes.map(q=>`<tr><td><b>${q[0]}</b><br><small style="color:var(--faint)">${q[2]}</small></td><td>${q[1]}</td><td class="num">${P(q[3])}</td><td><span class="tag ${q[4]==='Won'?'grn':q[4]==='Negotiation'?'amb':''}" style="${q[4]==='Sent'?'background:rgba(74,141,255,.14);color:var(--blue)':''}">${q[4]}</span></td></tr>`).join("")}
+        </tbody></table>
+      </div>
+    </div>`;
+  },
+  ai(){
+    return `
+    <div class="ai">
+      <div class="ai-top"><div class="face">✦</div>
+        <div><div style="font-weight:700">Chemspec AI Assistant</div><div style="color:var(--faint);font-size:12px">Trained on your datasheets, formulas &amp; sales history · runs on private models</div></div>
+        <div class="mode" id="aimode"><button class="on" data-m="internal">Internal</button><button data-m="customer">Customer</button></div>
+      </div>
+      <div class="chat" id="chat"></div>
+      <div class="sugg" id="sugg"></div>
+      <div class="ai-in"><input id="aiq" placeholder="Ask about products, formulas, customers, stock…" autocomplete="off"/><button id="aisend">Ask</button></div>
+    </div>`;
+  }
+};
+
+function alertRow(c,icon,title,sub){
+  return `<div class="alert"><div class="ico" style="background:${c}22;color:${c}">${icon}</div>
+  <div class="tx"><b>${title}</b><small>${sub}</small></div></div>`;
+}
+function agingBar(nm,val,color,base){
+  const max=Math.max(aging.current,aging.d30,aging.d60,aging.d90);
+  return `<div class="stage"><div class="nm">${nm}</div><div class="track"><div class="fill" data-w="${val/max*100}" style="background:${color}">P${val}k</div></div></div>`;
+}
+
+/* after-render animations */
+function afterOverview(){
+  const vals=[["Revenue · MTD"],[],[],[],[],[]];
+  const r=rev();
+  const targets=[
+    ()=>countUp(qVal(0),r[11],"P","m",2),
+    ()=>countUp(qVal(1),marginPct[11],"","%"),
+    ()=>countUp(qVal(2),2.34*scale(),"P","m",2),
+    ()=>countUp(qVal(3),958*scale(),"P","k"),
+    ()=>countUp(qVal(4),3.12*scale(),"P","m",2),
+    ()=>countUp(qVal(5),31,"","%"),
+  ];
+  targets.forEach(f=>f());
+  setTimeout(()=>document.querySelectorAll(".kpi .bar i").forEach(b=>b.style.width=b.dataset.w+"%"),100);
+  function qVal(i){return document.querySelectorAll(".kpi .val")[i];}
+}
+function afterQuotes(){setTimeout(()=>document.querySelectorAll(".fill").forEach(f=>f.style.width=f.dataset.w+"%"),80);}
+function afterDebtors(){
+  setTimeout(()=>document.querySelectorAll(".fill").forEach(f=>f.style.width=f.dataset.w+"%"),80);
+  const btn=document.getElementById("sendrem");
+  if(btn)btn.addEventListener("click",()=>{btn.classList.add("sent");btn.textContent="✓ 14 reminders queued — sending…";setTimeout(()=>btn.textContent="✓ 14 reminders sent",1400);});
+}
+
+/* ────────── AI assistant logic ────────── */
+let aiMode="internal";
+const KB={
+  internal:{
+    sugg:["Mixing ratio for STANDOX 2K HS Clear?","Best primer for galvanised steel?","Which customers haven't ordered in 60 days?","What's driving the margin lift?"],
+    answers:[
+      [/mix|ratio|clear|k9520|hardener/i,`<b>STANDOX 2K HS Clear K9520</b> — standard mix:<ul><li>4 : 1 with hardener (e.g. <b>H-470 fast</b> for ≤20°C, <b>H-480 std</b> for 20–30°C)</li><li>Add up to 10% thinner for spray viscosity</li><li>Pot life ≈ 60 min at 20°C · 2 coats · flash-off 5–10 min</li></ul><small style="color:var(--faint)">Illustrative — always confirm against the current Standox TDS on file.</small>`],
+      [/primer|galvanis|steel|corros|rust|epoxy/i,`For <b>galvanised steel</b> I'd recommend a 2-coat system:<ul><li><b>STANDOX 1K Etch Primer</b> — adhesion on bare/galv metal</li><li>Top with <b>Corrosion HD Epoxy Primer</b> for outdoor/industrial exposure</li></ul>Both are in stock at Gaborone. Want me to draft a quote?`],
+      [/order|customer|60 day|dormant|haven|inactiv/i,`<b>5 customers</b> with no order in 60+ days (combined avg P38k/mo historically):<ul><li>Phakalane Motors — last order 71 days</li><li>Lobatse Auto Spray — 64 days</li><li>Kasane Coatings — 88 days</li></ul>Shall I trigger a win-back email + a 5% loyalty offer?`],
+      [/margin|profit|driv|lift/i,`Margin rose <b>+1.0pt to 38%</b> this month. Drivers:<ul><li>Mix shift toward STANDOX clears (higher margin)</li><li>Francistown industrial coatings up 14%</li><li>Fewer discounted clearances vs last month</li></ul>`],
+    ],
+    fallback:`I can pull from your datasheets, mixing formulas, stock and sales history. Try asking about a product spec, a primer recommendation, or which customers have gone quiet.`
+  },
+  customer:{
+    sugg:["I need to respray a white bakkie","What do I need for a rusty trailer?","Do you stock spray guns?","Cheapest base + clear option?"],
+    answers:[
+      [/respray|bakkie|car|white|base|coat/i,`Great — for a <b>white respray</b> you'll want:<ul><li><b>AUTOMAX Basecoat — Arctic White</b> (or colour-matched)</li><li><b>STANDOX 2K HS Clear</b> + hardener</li><li>Etch primer, thinners, masking, P400 discs</li></ul>That's our most popular kit. Pickup at Gaborone or Francistown — want a quote?`],
+      [/rust|trailer|corros|outdoor|metal/i,`For a <b>rusty trailer</b>: sand back, then <b>1K Etch Primer</b> → <b>Corrosion HD Epoxy Primer</b> → topcoat. The epoxy is built for outdoor industrial exposure. I can reserve stock for you.`],
+      [/spray gun|equipment|sata|compressor/i,`Yes — we stock <b>SATA</b> and entry-level spray guns, plus regulators and filters. The SATA 5000B is our pro pick; we have units at Francistown. Want availability + price?`],
+      [/cheap|economy|budget|afford|option/i,`Best value combo: <b>AUTOMAX</b> economy base + a standard 2K clear. Strong finish, friendlier price than the full STANDOX premium line. Shall I put a starter kit quote together?`],
+    ],
+    fallback:`Hi! I'm Chemspec's product assistant. Tell me what you're painting (car, trailer, industrial steel…) and I'll recommend the right paint, primer and consumables — and check stock at your nearest branch.`
+  }
+};
+
+function afterAI(){
+  renderSugg();
+  pushBot(aiMode==="internal"?"Hi 👋 I'm wired into Chemspec's datasheets, stock and sales. Ask me anything — technical or commercial.":"Welcome to Chemspec! 👋 What are you working on today? I'll match you to the right products.");
+  document.getElementById("aimode").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    document.getElementById("aimode").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");aiMode=b.dataset.m;document.getElementById("chat").innerHTML="";
+    renderSugg();pushBot(KB[aiMode].fallback);
+  }));
+  document.getElementById("aisend").addEventListener("click",submitAI);
+  document.getElementById("aiq").addEventListener("keydown",e=>{if(e.key==="Enter")submitAI();});
+}
+function renderSugg(){document.getElementById("sugg").innerHTML=KB[aiMode].sugg.map(s=>`<button>${s}</button>`).join("");
+  document.querySelectorAll("#sugg button").forEach(b=>b.addEventListener("click",()=>{document.getElementById("aiq").value=b.textContent;submitAI();}));}
+function pushMsg(cls,html){const c=document.getElementById("chat");const m=document.createElement("div");m.className="msg "+cls;m.innerHTML=html;c.appendChild(m);c.scrollTop=c.scrollHeight;return m;}
+function pushBot(html){pushMsg("bot",html);}
+function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+/* canned demo answer (used when live AI is off or unreachable) */
+function cannedAnswer(q,mode){const kb=KB[mode];for(const[re,a]of kb.answers){if(re.test(q))return a;}return kb.fallback;}
+
+/* async — uses live DeepSeek (via proxy/key) when configured, else demo answers */
+async function submitAI(){
+  const inp=document.getElementById("aiq");const q=inp.value.trim();if(!q)return;inp.value="";
+  pushMsg("me",q);
+  const c=document.getElementById("chat");const t=document.createElement("div");t.className="msg bot";t.innerHTML='<div class="typing"><i></i><i></i><i></i></div>';c.appendChild(t);c.scrollTop=c.scrollHeight;
+  let html;
+  const cfg=aiConfig();
+  if(cfg.live){
+    try{ html=mdLite(await callLLM(cfg,q,aiMode)); }
+    catch(e){ html=cannedAnswer(q,aiMode)+`<small style="display:block;color:var(--faint);margin-top:8px">⚠ Live AI unavailable (${escapeHtml(String(e.message||e))}) — showing built-in answer.</small>`; }
+  } else {
+    await new Promise(r=>setTimeout(r,650+Math.random()*450));
+    html=cannedAnswer(q,aiMode);
+  }
+  t.remove(); pushBot(html);
+}
+</script>
+<script>
+/* ════════════ CONFIG · ADMIN PORTAL · AI CLIENT ════════════ */
+/* Combined SHA-256 of email:password — neither stored in cleartext. Change via RUNBOOK.md. */
+const ADMIN_CRED_HASH="d46b8d30dcec891fc25cdd815540a6f8e1f420f5171c722e0bc515d8137c11ab";
+const DEFAULT_PERSONA="You are the Chemspec AI assistant for a Botswana distributor of automotive, industrial and corrosion-protection coatings (brands: STANDOX, AUTOMAX). Be concise, practical and friendly. For technical questions give mixing ratios, primer/system recommendations and safety notes, and add a one-line caveat to confirm against the official product TDS. For business questions use the supplied live data. Currency is Pula (P). Never invent or expose customer personal data.";
+const LS="cs_settings_v1";
+
+function settings(){try{return JSON.parse(localStorage.getItem(LS)||"{}");}catch(e){return {};}}
+function saveSettings(o){localStorage.setItem(LS,JSON.stringify(o));}
+
+function aiConfig(){
+  const s=settings(), base=(window.CHEMSPEC_CONFIG||{});
+  const proxy=s.proxyUrl||base.AI_PROXY_URL||"";
+  const key=s.directKey||"";
+  const liveToggle=s.liveAI!==false; // default on; only off if explicitly disabled
+  return {
+    proxyUrl:proxy, directKey:key,
+    model:s.model||base.MODEL||"deepseek-chat",
+    temp:typeof s.temp==="number"?s.temp:0.4,
+    persona:s.persona||DEFAULT_PERSONA,
+    live: liveToggle && !!(proxy||key)
+  };
+}
+function dataContext(){
+  const lowStock=stock.filter(s=>s[5]!=="grn").map(s=>`${s[0]} @${s[1]} (~${s[4]}d to stockout)`).join("; ");
+  const overdue=debtors.filter(d=>d[2]!=="current").map(d=>`${d[0]} ${P(+d[1])} (${d[2]}d)`).join("; ");
+  const top=products.slice(0,5).map(p=>`${p[0]} (${p[3]}% margin)`).join("; ");
+  return `CHEMSPEC LIVE SNAPSHOT (synthetic demo data):
+- Revenue MTD P${revAll[11]}m, gross margin ${marginPct[11]}%, quote→order conversion 31%.
+- Branches: Gaborone ~64% of revenue, Francistown ~36%.
+- Stock needing reorder: ${lowStock}.
+- Overdue debtors: ${overdue}.
+- Top products by margin: ${top}.`;
+}
+async function callLLM(cfg,user,mode){
+  const sys=cfg.persona+"\n\nAudience: "+(mode==="customer"?"an external customer — recommend products and offer to prepare a quote.":"internal Chemspec staff — be direct and commercial.")+"\n\n"+dataContext();
+  const payload={model:cfg.model,temperature:cfg.temp,messages:[{role:"system",content:sys},{role:"user",content:user}]};
+  let url,headers={"Content-Type":"application/json"};
+  if(cfg.proxyUrl){ url=cfg.proxyUrl; }
+  else { url="https://api.deepseek.com/chat/completions"; headers["Authorization"]="Bearer "+cfg.directKey; }
+  const res=await fetch(url,{method:"POST",headers,body:JSON.stringify(payload)});
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const j=await res.json();
+  return j.choices?.[0]?.message?.content || j.reply || j.content || "(empty response)";
+}
+/* minimal markdown → safe HTML */
+function mdLite(t){
+  t=escapeHtml(t);
+  t=t.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code>$1</code>");
+  const lines=t.split(/\n/);let out="",ul=false;
+  for(let ln of lines){
+    if(/^\s*[-*]\s+/.test(ln)){if(!ul){out+="<ul>";ul=true;}out+="<li>"+ln.replace(/^\s*[-*]\s+/,"")+"</li>";}
+    else{if(ul){out+="</ul>";ul=false;}if(ln.trim())out+="<p>"+ln+"</p>";}
+  }
+  if(ul)out+="</ul>";
+  return out||"<p>(no answer)</p>";
+}
+
+/* ── status pill ── */
+function refreshAiStat(){
+  const el=document.getElementById("aistat");if(!el)return;
+  const live=aiConfig().live;
+  el.textContent=live?"● Live AI":"● Demo AI";
+  el.classList.toggle("live",live);
+}
+
+/* ── sha-256 ── */
+async function sha256(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+
+/* ── admin portal ── */
+const adminEl=document.getElementById("admin");
+function openAdmin(){adminEl.classList.add("show");const authed=sessionStorage.getItem("cs_admin")==="1";showAdmin(authed);if(authed)loadAdminFields();}
+function closeAdmin(){adminEl.classList.remove("show");document.getElementById("adErr").textContent="";}
+function showAdmin(authed){document.getElementById("adLogin").style.display=authed?"none":"block";document.getElementById("adPanel").style.display=authed?"block":"none";document.getElementById("adTitle").textContent=authed?"Admin · settings":"Admin sign in";}
+
+document.getElementById("adminBtn").addEventListener("click",openAdmin);
+document.getElementById("adClose").addEventListener("click",closeAdmin);
+adminEl.addEventListener("click",e=>{if(e.target===adminEl)closeAdmin();});
+
+document.getElementById("adLoginBtn").addEventListener("click",doLogin);
+document.getElementById("adPass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+async function doLogin(){
+  const email=document.getElementById("adEmail").value.trim().toLowerCase();
+  const pass=document.getElementById("adPass").value;
+  const err=document.getElementById("adErr");
+  if(!email||!pass){err.textContent="Enter email and password.";return;}
+  const h=await sha256(email+":"+pass);
+  if(h===ADMIN_CRED_HASH){sessionStorage.setItem("cs_admin","1");document.getElementById("adPass").value="";showAdmin(true);loadAdminFields();}
+  else{err.textContent="Incorrect email or password.";}
+}
+document.getElementById("adLogout").addEventListener("click",()=>{sessionStorage.removeItem("cs_admin");showAdmin(false);});
+
+function loadAdminFields(){
+  const s=settings();
+  document.getElementById("cfgProxy").value=s.proxyUrl||(window.CHEMSPEC_CONFIG||{}).AI_PROXY_URL||"";
+  document.getElementById("cfgKey").value=s.directKey||"";
+  document.getElementById("cfgModel").value=s.model||"deepseek-chat";
+  document.getElementById("cfgTemp").value=typeof s.temp==="number"?s.temp:0.4;
+  document.getElementById("cfgPersona").value=s.persona||DEFAULT_PERSONA;
+  setSw("tgAI",s.liveAI!==false); setSw("tgRem",s.autoRem!==false); setSw("tgStk",s.autoStock!==false);
+  updAdState();
+}
+function setSw(id,on){document.getElementById(id).classList.toggle("on",!!on);}
+document.querySelectorAll(".sw").forEach(sw=>sw.addEventListener("click",()=>{sw.classList.toggle("on");updAdState();}));
+function updAdState(){
+  const proxy=document.getElementById("cfgProxy").value.trim();
+  const key=document.getElementById("cfgKey").value.trim();
+  const liveOn=document.getElementById("tgAI").classList.contains("on");
+  const live=liveOn&&(proxy||key);
+  const el=document.getElementById("adState");
+  el.textContent=live?("AI: Live ("+(proxy?"proxy":"browser key")+")"):"AI: Demo mode (built-in answers)";
+  el.classList.toggle("live",!!live);
+}
+["cfgProxy","cfgKey"].forEach(id=>document.getElementById(id).addEventListener("input",updAdState));
+
+document.getElementById("adSave").addEventListener("click",()=>{
+  const s={
+    proxyUrl:document.getElementById("cfgProxy").value.trim(),
+    directKey:document.getElementById("cfgKey").value.trim(),
+    model:document.getElementById("cfgModel").value,
+    temp:parseFloat(document.getElementById("cfgTemp").value)||0.4,
+    persona:document.getElementById("cfgPersona").value.trim()||DEFAULT_PERSONA,
+    liveAI:document.getElementById("tgAI").classList.contains("on"),
+    autoRem:document.getElementById("tgRem").classList.contains("on"),
+    autoStock:document.getElementById("tgStk").classList.contains("on")
+  };
+  saveSettings(s);refreshAiStat();
+  const b=document.getElementById("adSave");b.textContent="✓ Saved";setTimeout(()=>b.textContent="Save settings",1400);
+});
+
+document.getElementById("adTest").addEventListener("click",async()=>{
+  const msg=document.getElementById("adTestMsg");
+  const proxy=document.getElementById("cfgProxy").value.trim();
+  const key=document.getElementById("cfgKey").value.trim();
+  if(!proxy&&!key){msg.style.color="var(--faint)";msg.textContent="No proxy/key set — assistant runs in demo mode.";return;}
+  msg.style.color="var(--muted)";msg.textContent="Testing…";
+  const cfg={proxyUrl:proxy,directKey:key,model:document.getElementById("cfgModel").value,temp:0.2,persona:DEFAULT_PERSONA};
+  try{const r=await callLLM(cfg,"Reply with exactly: OK","internal");msg.style.color="var(--green)";msg.textContent="✓ Live AI responded: "+r.slice(0,60);}
+  catch(e){msg.style.color="#ff8585";msg.textContent="✗ "+(e.message||e)+" — likely CORS (use the Worker proxy) or bad key.";}
+});
+
+/* keyboard: open admin with the gear; initial pill */
+refreshAiStat();
+</script>
+</body>
+</html>

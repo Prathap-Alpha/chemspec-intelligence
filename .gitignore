@@ -1,0 +1,11 @@
+# secrets / local
+.dev.vars
+.env
+*.local
+worker/.wrangler/
+node_modules/
+
+# os / editor
+.DS_Store
+*.log
+.vscode/
