@@ -314,6 +314,7 @@
     <button class="on" data-v="overview"><span class="ic">▦</span> Overview</button>
     <button data-v="sales"><span class="ic">▤</span> Sales &amp; Profit</button>
     <button data-v="stock"><span class="ic">▣</span> Stock Forecast</button>
+    <button data-v="stockctl"><span class="ic">▤</span> Stock Control</button>
     <button data-v="procurement"><span class="ic">⛬</span> Procurement</button>
     <button data-v="quotes"><span class="ic">◧</span> Quote Pipeline</button>
     <div class="navlbl">Finance</div>
@@ -416,6 +417,28 @@ const stockRaw=[ // name, branch, on-hand, weekly demand
 ];
 // days-to-stockout = on-hand / weekly demand × 7; flag <15 red, <35 amber, else healthy
 const stock=stockRaw.map(s=>{const days=Math.round(s[2]/s[3]*7);const f=days<15?"red":days<35?"amb":"grn";return[s[0],s[1],s[2],s[3],days,f];});
+
+/* ── ERP: stock control (paint-specific: batch, shelf-life, UoM, branch) ── */
+const stockOnHand=[ // sku, product, branch, qty, uom, batch, expiry, expiring?, valueP, status
+  ["STX-K9520","STANDOX 2K HS Clear K9520","Gaborone",68,"L","B-2611","Apr 2027",false,142000,"low"],
+  ["AMX-BW01","AUTOMAX Basecoat — Arctic White","Gaborone",240,"L","B-2588","Jan 2027",false,96000,"ok"],
+  ["STX-EP1K","STANDOX 1K Etch Primer","Gaborone",310,"L","B-2590","Aug 2027",false,71000,"ok"],
+  ["COR-EPX20","Corrosion HD Epoxy Primer 20L","Francistown",18,"L","B-2575","Sep 2026",true,21000,"low"],
+  ["HRD-470","Hardener H-470 fast","Gaborone",42,"L","B-2602","Aug 2026",true,18000,"low"],
+  ["TNT-BASE","Tinting base — neutral","Gaborone",520,"L","B-2599","Feb 2028",false,58000,"ok"],
+  ["ABR-P400","Sanding discs P400","Francistown",90,"box","—","—",false,12000,"low"],
+  ["THN-STD","Thinner — standard","Gaborone",180,"L","B-2607","Nov 2027",false,9000,"ok"],
+];
+const batchAlerts=[ // batch, product, qty, expires, in, severity
+  ["B-2540","AUTOMAX base — Signal Red","6 L","20 Jul 2026","32 days","red"],
+  ["B-2602","Hardener H-470 fast","42 L","31 Aug 2026","58 days","amb"],
+  ["B-2575","Corrosion HD Epoxy 20L","18 L","15 Sep 2026","73 days","amb"],
+];
+const transfers=[ // ref, movement, items, status, severity
+  ["TRF-118","Gaborone → Francistown","Corrosion HD Epoxy ×12","In transit","amb"],
+  ["TRF-117","Francistown → Gaborone","SATA spare parts","Received","grn"],
+  ["TRF-116","Gaborone → Francistown","STANDOX 2K Clear ×8","Pending pick","red"],
+];
 
 const debtors=[
   ["Kgale Panel Beaters",148200,"90+"],
@@ -545,7 +568,7 @@ function enter(){
 setInterval(()=>{const d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});},1000);
 
 /* ────────── nav ────────── */
-const titles={overview:"Executive Overview",sales:"Sales & Profitability",stock:"Predictive Stock Forecast",procurement:"Procurement & Suppliers",quotes:"Quote Pipeline",financials:"Financial Statements",ledger:"General Ledger & Trial Balance",debtors:"Debtors & Collections",ai:"Chemspec AI Assistant",approvals:"Approvals · Maker-Checker",audit:"Audit Trail"};
+const titles={overview:"Executive Overview",sales:"Sales & Profitability",stock:"Predictive Stock Forecast",stockctl:"Stock Control · Paints",procurement:"Procurement & Suppliers",quotes:"Quote Pipeline",financials:"Financial Statements",ledger:"General Ledger & Trial Balance",debtors:"Debtors & Collections",ai:"Chemspec AI Assistant",approvals:"Approvals · Maker-Checker",audit:"Audit Trail"};
 const nav=document.getElementById("nav");
 nav.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
   nav.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
@@ -710,6 +733,39 @@ const VIEWS={
         <td>${s[5]==='red'?'<span class="tag red">Reorder now</span>':s[5]==='amb'?'<span class="tag amb">Reorder soon</span>':'<span class="tag grn">Healthy</span>'}</td>
       </tr>`).join("")}
       </tbody></table>
+    </div>`;
+  },
+  stockctl(){
+    const low=stockOnHand.filter(s=>s[9]!=="ok").length;
+    const val=stockOnHand.reduce((a,s)=>a+s[8],0);
+    return `
+    <div class="grid kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="card kpi"><div class="lbl">SKUs tracked</div><div class="val">${stockOnHand.length+38}</div><div class="chg up">2 branches</div></div>
+      <div class="card kpi"><div class="lbl">Stock value</div><div class="val">P3.12m</div><div class="chg up">at cost</div></div>
+      <div class="card kpi"><div class="lbl">Low / out</div><div class="val">${low}</div><div class="chg down">need reorder</div></div>
+      <div class="card kpi"><div class="lbl">Batches expiring</div><div class="val">${batchAlerts.length}</div><div class="chg down">FIFO watch</div></div>
+    </div>
+    <div class="card mb14">
+      <div class="panel-h"><div class="t">Stock on hand · by SKU &amp; batch</div><div class="s">litres / units · branch · expiry</div></div>
+      <table><thead><tr><th>SKU</th><th>Product</th><th>Branch</th><th class="num">On hand</th><th>Batch</th><th>Expiry</th><th class="num">Value</th><th>Status</th></tr></thead><tbody>
+      ${stockOnHand.map(s=>`<tr><td><b>${s[0]}</b></td><td>${s[1]}</td><td style="color:var(--muted)">${s[2]}</td><td class="num">${s[3]} ${s[4]}</td><td>${s[5]}</td><td style="color:${s[7]?'var(--amber)':'var(--muted)'}">${s[6]}${s[7]?' ⚠':''}</td><td class="num">P${s[8].toLocaleString()}</td><td>${s[9]==='ok'?'<span class="tag grn">In stock</span>':s[9]==='out'?'<span class="tag red">Out</span>':'<span class="tag amb">Low</span>'}</td></tr>`).join("")}
+      </tbody></table>
+    </div>
+    <div class="grid row2b">
+      <div class="card">
+        <div class="panel-h"><div class="t">Batch &amp; shelf-life · FIFO</div><div class="s">paint expiry control</div></div>
+        <table><thead><tr><th>Batch</th><th>Product</th><th class="num">Qty</th><th>Expires</th><th>In</th></tr></thead><tbody>
+        ${batchAlerts.map(b=>`<tr><td><b>${b[0]}</b></td><td>${b[1]}</td><td class="num">${b[2]}</td><td style="color:var(--muted)">${b[3]}</td><td><span class="tag ${b[5]}">${b[4]}</span></td></tr>`).join("")}
+        </tbody></table>
+        <div style="color:var(--faint);font-size:11.5px;margin-top:10px">Oldest batch issues first; paint past shelf-life is blocked before dispatch.</div>
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">Inter-branch transfers</div><div class="s">Gaborone ⇄ Francistown</div></div>
+        <table><thead><tr><th>Ref</th><th>Movement</th><th>Items</th><th>Status</th></tr></thead><tbody>
+        ${transfers.map(t=>`<tr><td><b>${t[0]}</b></td><td>${t[1]}</td><td style="color:var(--muted)">${t[2]}</td><td><span class="tag ${t[4]}">${t[3]}</span></td></tr>`).join("")}
+        </tbody></table>
+        <div style="color:var(--faint);font-size:11.5px;margin-top:10px">Stock moved between depots with full audit trail; in-transit qty reserved.</div>
+      </div>
     </div>`;
   },
   debtors(){
