@@ -218,6 +218,33 @@
   .sw.on::after{transform:translateX(18px)}
   .pill-state{display:inline-block;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--elev);color:var(--faint);margin-bottom:4px}
   .pill-state.live{background:rgba(63,208,126,.15);color:var(--green)}
+
+  /* grouped ERP nav */
+  nav{overflow-y:auto}
+  nav::-webkit-scrollbar{width:7px}nav::-webkit-scrollbar-thumb{background:var(--line);border-radius:7px}
+  .navlbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:15px 14px 5px}
+  nav button.on{background:var(--surface);box-shadow:inset 2px 0 0 var(--brand)}
+  .topsel{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--muted)}
+  .topsel b{color:var(--text)}
+
+  /* financial statements */
+  .tabs{display:flex;gap:6px;margin-bottom:18px}
+  .tabs button{background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;cursor:pointer;transition:.2s var(--ease)}
+  .tabs button.on{background:var(--elev);color:var(--text);border-color:var(--brand)}
+  .stmt-tbl{width:100%;border-collapse:collapse;font-size:14px}
+  .stmt-tbl td{padding:9px 4px;border-bottom:1px solid var(--line)}
+  .stmt-tbl td.amt{text-align:right;font-variant-numeric:tabular-nums}
+  .stmt-tbl tr.sub td{color:var(--muted);font-size:13px}
+  .stmt-tbl tr.sub td.ind{padding-left:22px}
+  .stmt-tbl tr.total td{font-weight:800;border-top:1px solid var(--line)}
+  .stmt-tbl tr.grand td{font-weight:800;color:var(--brand);font-size:15px;border-top:2px solid var(--brand);border-bottom:none}
+  .badge-ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--green);background:rgba(63,208,126,.12);padding:5px 11px;border-radius:999px}
+  .badge-w{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--amber);background:rgba(255,176,0,.12);padding:5px 11px;border-radius:999px}
+  .dr{color:var(--blue)}.cr{color:var(--magenta)}
+  .approve{background:rgba(63,208,126,.14);color:var(--green);border:1px solid rgba(63,208,126,.3)}
+  .reject{background:var(--elev);color:var(--muted);border:1px solid var(--line)}
+  .miniact{font-size:11px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;transition:.15s var(--ease)}
+  .miniact:hover{transform:translateY(-1px)}
   @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.row2,.row2b{grid-template-columns:1fr}}
 </style>
 </head>
@@ -247,6 +274,7 @@
     <div class="ttl" id="vtitle">Executive Overview</div>
     <div class="live"><span class="dot"></span> Live · syncing Fincon</div>
     <div class="spacer"></div>
+    <div class="topsel">Period <b>FY26 · Jun</b></div>
     <div class="branch" id="branch">
       <button class="on" data-b="all">All branches</button>
       <button data-b="gabs">Gaborone</button>
@@ -258,13 +286,21 @@
   </div>
 
   <nav id="nav">
-    <div id="navpill"></div>
+    <div class="navlbl">Operations</div>
     <button class="on" data-v="overview"><span class="ic">▦</span> Overview</button>
     <button data-v="sales"><span class="ic">▤</span> Sales &amp; Profit</button>
     <button data-v="stock"><span class="ic">▣</span> Stock Forecast</button>
-    <button data-v="debtors"><span class="ic">◷</span> Debtors</button>
+    <button data-v="procurement"><span class="ic">⛬</span> Procurement</button>
     <button data-v="quotes"><span class="ic">◧</span> Quote Pipeline</button>
+    <div class="navlbl">Finance</div>
+    <button data-v="financials"><span class="ic">▥</span> Financials</button>
+    <button data-v="ledger"><span class="ic">≣</span> General Ledger</button>
+    <button data-v="debtors"><span class="ic">◷</span> Debtors &amp; AR</button>
+    <div class="navlbl">Intelligence</div>
     <button data-v="ai"><span class="ic">✦</span> AI Assistant</button>
+    <div class="navlbl">Controls</div>
+    <button data-v="approvals"><span class="ic">✓</span> Approvals</button>
+    <button data-v="audit"><span class="ic">◉</span> Audit Trail</button>
     <div class="navfoot">Demo · 18 Jun 2026<br>Data is synthetic &amp; illustrative.</div>
   </nav>
 
@@ -375,6 +411,95 @@ const recentQuotes=[
   ["Q-2258","Francistown Marine","Anti-fouling + primer",47100,"Sent"],
 ];
 
+/* ── ERP: financial statements (P millions) ── */
+const pnl=[
+  ["Revenue",20.24,"line"],
+  ["Cost of sales",-13.16,"sub"],
+  ["Gross profit",7.08,"total"],
+  ["Distribution & logistics",-1.10,"sub"],
+  ["Salaries & wages",-2.30,"sub"],
+  ["Marketing & promotions",-0.40,"sub"],
+  ["Rent & occupancy",-0.55,"sub"],
+  ["Administration & other",-0.83,"sub"],
+  ["EBITDA",1.90,"total"],
+  ["Depreciation & amortisation",-0.42,"sub"],
+  ["Operating profit (EBIT)",1.48,"total"],
+  ["Finance costs",-0.22,"sub"],
+  ["Profit before tax",1.26,"total"],
+  ["Taxation (22%)",-0.28,"sub"],
+  ["Profit after tax",0.98,"grand"],
+];
+const bs={
+  assets:[["Property, plant & equipment",3.20],["Inventory",3.12],["Trade & other receivables",0.96],["Cash & cash equivalents",2.34]],
+  equity:[["Share capital",1.00],["Retained earnings",4.22]],
+  liab:[["Trade & other payables",2.80],["Taxation payable",0.28],["Borrowings",1.32]],
+}; // assets 9.62 = equity 5.22 + liab 4.40
+const cf=[
+  ["Profit after tax",0.98,"sub"],
+  ["Add: depreciation & amortisation",0.42,"sub"],
+  ["Working capital movements",0.00,"sub"],
+  ["Cash generated from operations",1.40,"total"],
+  ["Purchase of equipment",-0.60,"sub"],
+  ["Cash used in investing",-0.60,"total"],
+  ["Loan repayments",-0.30,"sub"],
+  ["Dividends paid",-0.20,"sub"],
+  ["Cash used in financing",-0.50,"total"],
+  ["Net increase in cash",0.30,"total"],
+  ["Opening cash",2.04,"sub"],
+  ["Closing cash",2.34,"grand"],
+];
+
+/* ── ERP: general ledger + trial balance (P'000) ── */
+const journals=[
+  ["JE-3041","18 Jun","Sales invoice INV-4520 — City Panel","Dr Trade debtors · Cr Sales",58.4],
+  ["JE-3040","18 Jun","Supplier bill — Axalta/Standox stock","Dr Inventory · Cr Trade creditors",212.0],
+  ["JE-3039","17 Jun","Bank receipt — Orapa Mine Workshop","Dr Bank · Cr Trade debtors",74.8],
+  ["JE-3038","17 Jun","Payroll — June (38 staff)","Dr Salaries · Cr Bank/PAYE",243.5],
+  ["JE-3037","16 Jun","Depreciation — June","Dr Depreciation · Cr Accum. dep.",35.0],
+  ["JE-3036","16 Jun","GRV — abrasives consignment","Dr Inventory · Cr GR-IR clearing",46.2],
+];
+const tb=[
+  ["1000 Property, plant & equipment",3200,0],
+  ["1200 Inventory",3120,0],
+  ["1300 Trade debtors",958,0],
+  ["1400 Bank & cash",2340,0],
+  ["2000 Trade creditors",0,2800],
+  ["2100 Taxation payable",0,280],
+  ["2200 Borrowings",0,1320],
+  ["3000 Share capital",0,1000],
+  ["3100 Retained earnings",0,4218],
+]; // Dr 9,618 = Cr 9,618
+
+/* ── ERP: procurement ── */
+const suppliers=[
+  ["Axalta / Standox (RSA)","Paint & clears","Net 30","P1.84m"],
+  ["Industrial Abrasives Co","Abrasives & discs","Net 30","P0.62m"],
+  ["SATA Spray Equipment","Equipment","Net 45","P0.38m"],
+  ["Botswana Packaging Ltd","Tins & packaging","Net 30","P0.21m"],
+];
+const purchaseOrders=[
+  ["PO-1184","Axalta / Standox","2K Clear + hardeners","212,000","Billed","grn"],
+  ["PO-1185","Industrial Abrasives","P400 discs ×40 box","46,200","GRV received","amb"],
+  ["PO-1186","SATA Spray Equipment","SATA 5000B ×6","58,800","Awaiting GRV","amb"],
+  ["PO-1187","Axalta / Standox","AUTOMAX base restock","134,500","Pending approval","red"],
+];
+
+/* ── ERP: maker-checker queue + audit trail ── */
+const approvalQueue=[
+  ["PO-1187","Purchase order","Axalta — AUTOMAX restock","P134,500","Kago M."],
+  ["PAY-882","Supplier payment","Industrial Abrasives — INV-2231","P46,200","Boitumelo S."],
+  ["CN-204","Credit note","City Panel — return 4×2K clear","P6,400","Tebogo D."],
+  ["JE-3042","Journal entry","Reclass marketing accrual","P18,000","Finance"],
+];
+const auditLog=[
+  ["12:06","K. Molefe","Approved PO-1184 (Axalta, P212k)","Procurement"],
+  ["11:41","System","Auto-reminder sent — 14 overdue debtors","Collections"],
+  ["10:58","B. Sento","Posted JE-3038 payroll June","General Ledger"],
+  ["10:32","T. Phiri","Changed credit limit — Kgale Panel P150k→P120k","Debtors"],
+  ["09:15","System","Stock alert — 3 SKUs below reorder point","Inventory"],
+  ["08:50","K. Molefe","Signed in via SSO","Security"],
+];
+
 let branch="all";
 const P=n=>"P"+n.toLocaleString("en",{maximumFractionDigits:0});
 const Pm=n=>"P"+n.toFixed(2)+"m";
@@ -396,14 +521,12 @@ function enter(){
 setInterval(()=>{const d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});},1000);
 
 /* ────────── nav ────────── */
-const titles={overview:"Executive Overview",sales:"Sales & Profitability",stock:"Predictive Stock Forecast",debtors:"Debtors & Collections",quotes:"Quote Pipeline",ai:"Chemspec AI Assistant"};
-const nav=document.getElementById("nav"), pill=document.getElementById("navpill");
-nav.querySelectorAll("button").forEach((b,i)=>b.addEventListener("click",()=>{
+const titles={overview:"Executive Overview",sales:"Sales & Profitability",stock:"Predictive Stock Forecast",procurement:"Procurement & Suppliers",quotes:"Quote Pipeline",financials:"Financial Statements",ledger:"General Ledger & Trial Balance",debtors:"Debtors & Collections",ai:"Chemspec AI Assistant",approvals:"Approvals · Maker-Checker",audit:"Audit Trail"};
+const nav=document.getElementById("nav");
+nav.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
   nav.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
-  b.classList.add("on"); movePill(b); render(b.dataset.v);
+  b.classList.add("on"); render(b.dataset.v);
 }));
-function movePill(b){const r=b.getBoundingClientRect(),p=b.parentElement.getBoundingClientRect();pill.style.transform=`translateY(${r.top-p.top-16}px)`;}
-window.addEventListener("load",()=>{const f=nav.querySelector("button.on");if(f)movePill(f);});
 
 /* branch toggle */
 document.getElementById("branch").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
@@ -475,6 +598,8 @@ function render(v){
   if(v==="quotes")afterQuotes();
   if(v==="ai")afterAI();
   if(v==="debtors")afterDebtors();
+  if(v==="financials")afterFinancials();
+  if(v==="approvals")afterApprovals();
 }
 
 const rev=()=>branch==="gabs"?revGabs:branch==="fran"?revFran:revAll;
@@ -632,6 +757,75 @@ const VIEWS={
       <div class="sugg" id="sugg"></div>
       <div class="ai-in"><input id="aiq" placeholder="Ask about products, formulas, customers, stock…" autocomplete="off"/><button id="aisend">Ask</button></div>
     </div>`;
+  },
+  procurement(){
+    return `
+    <div class="grid row2">
+      <div class="card">
+        <div class="panel-h"><div class="t">Open purchase orders</div><div class="s">GR-IR clearing</div></div>
+        <table><thead><tr><th>PO</th><th>Supplier</th><th class="num">Value</th><th>Status</th></tr></thead><tbody>
+        ${purchaseOrders.map(p=>`<tr><td><b>${p[0]}</b><br><small style="color:var(--faint)">${p[2]}</small></td><td>${p[1]}</td><td class="num">P${p[3]}</td><td><span class="tag ${p[5]}">${p[4]}</span></td></tr>`).join("")}
+        </tbody></table>
+        <div style="color:var(--faint);font-size:11.5px;margin-top:12px">PO → GRV (goods receipt) → bill. GL leg recognised on bill approval via GR-IR clearing — never at PO raise.</div>
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">Top suppliers</div><div class="s">YTD spend</div></div>
+        <table><thead><tr><th>Supplier</th><th>Category</th><th>Terms</th><th class="num">Spend</th></tr></thead><tbody>
+        ${suppliers.map(s=>`<tr><td><b>${s[0]}</b></td><td style="color:var(--muted)">${s[1]}</td><td>${s[2]}</td><td class="num">${s[3]}</td></tr>`).join("")}
+        </tbody></table>
+      </div>
+    </div>`;
+  },
+  financials(){
+    return `
+    <div class="tabs" id="fintabs">
+      <button class="on" data-t="pl">Income Statement</button>
+      <button data-t="bs">Balance Sheet</button>
+      <button data-t="cf">Cash Flow</button>
+    </div>
+    <div class="card">
+      <div class="panel-h"><div class="t">Chemspec (Pty) Ltd · FY26 · all branches</div><span class="badge-ok">● Trial balance balanced</span></div>
+      <div id="finbody"></div>
+      <div style="color:var(--faint);font-size:11.5px;margin-top:14px">Figures in Pula millions · synthetic · management basis from Fincon GL.</div>
+    </div>`;
+  },
+  ledger(){
+    const drT=tb.reduce((s,r)=>s+r[1],0), crT=tb.reduce((s,r)=>s+r[2],0);
+    return `
+    <div class="grid row2">
+      <div class="card">
+        <div class="panel-h"><div class="t">Recent journal entries</div><div class="s">auto-posted from source docs</div></div>
+        <table><thead><tr><th>Ref</th><th>Date</th><th>Description</th><th class="num">P'000</th></tr></thead><tbody>
+        ${journals.map(j=>`<tr><td><b>${j[0]}</b></td><td style="color:var(--muted)">${j[1]}</td><td>${j[2]}<br><small style="color:var(--faint)">${j[3]}</small></td><td class="num">${j[4].toFixed(1)}</td></tr>`).join("")}
+        </tbody></table>
+      </div>
+      <div class="card">
+        <div class="panel-h"><div class="t">Trial balance</div>${drT===crT?'<span class="badge-ok">● Balanced</span>':'<span class="badge-w">⚠ Out of balance</span>'}</div>
+        <table><thead><tr><th>Account</th><th class="num">Dr</th><th class="num">Cr</th></tr></thead><tbody>
+        ${tb.map(r=>`<tr><td>${r[0]}</td><td class="num dr">${r[1]?r[1].toLocaleString():'—'}</td><td class="num cr">${r[2]?r[2].toLocaleString():'—'}</td></tr>`).join("")}
+        <tr style="border-top:2px solid var(--brand)"><td><b>Total (P'000)</b></td><td class="num dr"><b>${drT.toLocaleString()}</b></td><td class="num cr"><b>${crT.toLocaleString()}</b></td></tr>
+        </tbody></table>
+      </div>
+    </div>`;
+  },
+  approvals(){
+    return `
+    <div class="card mb14" style="display:flex;align-items:center;gap:16px;border-left:3px solid var(--brand)">
+      <div style="font-size:26px">✓</div>
+      <div><div style="font-weight:800;font-size:16px">Maker-checker queue</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:3px"><b style="color:var(--brand)">${approvalQueue.length}</b> items awaiting approval. Every PO, payment, credit note &amp; journal is dual-controlled.</div></div>
+    </div>
+    <div class="card"><table><thead><tr><th>Ref</th><th>Type</th><th>Detail</th><th class="num">Amount</th><th>Raised by</th><th>Action</th></tr></thead><tbody>
+    ${approvalQueue.map((a,i)=>`<tr><td><b>${a[0]}</b></td><td>${a[1]}</td><td>${a[2]}</td><td class="num">${a[3]}</td><td style="color:var(--muted)">${a[4]}</td>
+      <td style="white-space:nowrap"><button class="miniact approve" data-act="ok">Approve</button> <button class="miniact reject" data-act="no">Reject</button></td></tr>`).join("")}
+    </tbody></table></div>`;
+  },
+  audit(){
+    return `
+    <div class="card"><div class="panel-h"><div class="t">Activity log</div><div class="s">immutable · last 24h</div></div>
+    <table><thead><tr><th class="num">Time</th><th>User</th><th>Action</th><th>Module</th></tr></thead><tbody>
+    ${auditLog.map(a=>`<tr><td class="num" style="color:var(--muted)">${a[0]}</td><td><b>${a[1]}</b></td><td>${a[2]}</td><td><span class="tag" style="background:var(--elev);color:var(--muted)">${a[3]}</span></td></tr>`).join("")}
+    </tbody></table></div>`;
   }
 };
 
@@ -665,6 +859,40 @@ function afterDebtors(){
   setTimeout(()=>document.querySelectorAll(".fill").forEach(f=>f.style.width=f.dataset.w+"%"),80);
   const btn=document.getElementById("sendrem");
   if(btn)btn.addEventListener("click",()=>{btn.classList.add("sent");btn.textContent="✓ 14 reminders queued — sending…";setTimeout(()=>btn.textContent="✓ 14 reminders sent",1400);});
+}
+
+/* financial-statement tabs */
+function stmtRows(rows){return rows.map(r=>{const lbl=r[0],amt=r[1],type=r[2];
+  const cls=type==='grand'?'grand':type==='total'?'total':type==='sub'?'sub':'';
+  const ind=type==='sub'?'ind':'';
+  const neg=amt<0;const val=(neg?'(P':'P')+Math.abs(amt).toFixed(2)+'m'+(neg?')':'');
+  return `<tr class="${cls}"><td class="${ind}">${lbl}</td><td class="amt">${val}</td></tr>`;}).join("");}
+function renderFin(t){
+  document.querySelectorAll('#fintabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  const body=document.getElementById('finbody');if(!body)return;
+  if(t==='bs'){
+    const aT=bs.assets.reduce((s,x)=>s+x[1],0),eT=bs.equity.reduce((s,x)=>s+x[1],0),lT=bs.liab.reduce((s,x)=>s+x[1],0);
+    const sec=rows=>rows.map(x=>`<tr class="sub"><td class="ind">${x[0]}</td><td class="amt">P${x[1].toFixed(2)}m</td></tr>`).join("");
+    body.innerHTML=`<table class="stmt-tbl">
+      <tr class="total"><td>Assets</td><td class="amt"></td></tr>${sec(bs.assets)}
+      <tr class="total"><td>Total assets</td><td class="amt">P${aT.toFixed(2)}m</td></tr>
+      <tr class="total"><td>Equity</td><td class="amt"></td></tr>${sec(bs.equity)}
+      <tr class="total"><td>Total equity</td><td class="amt">P${eT.toFixed(2)}m</td></tr>
+      <tr class="total"><td>Liabilities</td><td class="amt"></td></tr>${sec(bs.liab)}
+      <tr class="total"><td>Total liabilities</td><td class="amt">P${lT.toFixed(2)}m</td></tr>
+      <tr class="grand"><td>Total equity &amp; liabilities</td><td class="amt">P${(eT+lT).toFixed(2)}m</td></tr>
+    </table>`;
+  } else { body.innerHTML=`<table class="stmt-tbl">${stmtRows(t==='cf'?cf:pnl)}</table>`; }
+}
+function afterFinancials(){
+  document.querySelectorAll('#fintabs button').forEach(b=>b.addEventListener('click',()=>renderFin(b.dataset.t)));
+  renderFin('pl');
+}
+function afterApprovals(){
+  document.querySelectorAll('#main .miniact').forEach(b=>b.addEventListener('click',()=>{
+    const cell=b.parentElement,act=b.dataset.act;
+    cell.innerHTML=act==='ok'?'<span class="tag grn">✓ Approved</span>':'<span class="tag red">Rejected</span>';
+  }));
 }
 
 /* ────────── AI assistant logic ────────── */
